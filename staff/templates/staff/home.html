@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Home — Staff{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;background:var(--surface-1)">
+  <div style="width:300px;background:var(--surface-2);border-radius:24px;border:0.5px solid var(--border-strong);padding:24px 20px;display:flex;flex-direction:column;align-items:center;min-height:480px;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
+
+    <div style="width:64px;height:64px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-weight:500;font-size:18px;color:var(--text-accent);margin:12px 0 10px">
+      {{ request.user.get_initials|default:"AK" }}
+    </div>
+    <p style="font-size:15px;font-weight:500;margin:0">{{ request.user.get_full_name|default:"Ahmed Khan" }}</p>
+    <p style="font-size:12px;color:var(--text-secondary);margin:2px 0 30px">Jamrud Road center</p>
+
+    <div style="width:100%;flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px">
+      <div style="text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:-6px">What would you like to do?</div>
+
+      <!-- Check in -> goes to dashboard -->
+      <form method="post" action="{% url 'staff_dashboard' %}">
+        {% csrf_token %}
+        <button type="submit" style="width:100%;background:#2FBF8F;color:#0B2E1F;border:none;padding:22px;border-radius:16px;font-size:16px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <i class="ti ti-map-pin-check" style="font-size:26px"></i>Check in
+        </button>
+      </form>
+
+      <!-- Emergency alarm -> sends instant SOS -->
+      <button type="button" id="emergencyBtn" style="width:100%;background:var(--fill-danger);color:var(--on-danger);border:none;padding:22px;border-radius:16px;font-size:16px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <i class="ti ti-alert-triangle" style="font-size:26px"></i>Emergency alarm
+      </button>
+    </div>
+
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:20px">
+      Check in unlocks your dashboard. Emergency alarm sends an instant alert to the office.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('emergencyBtn').addEventListener('click', function(){
+  if(confirm('Send emergency alert to the office now?')){
+    // TODO: AJAX call to emergency-alert endpoint with navigator.geolocation coords
+    alert('Emergency alert sent!');
+  }
+});
+</script>
+{% endblock %}

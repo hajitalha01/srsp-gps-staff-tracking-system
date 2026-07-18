@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — NGO Staff Tracking System</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Custom Dashboard CSS -->
+  <link rel="stylesheet" href="/static/css/admin_dashboard.css">
+</head>
+<body>
+
+  <!-- ===== PAGE WRAPPER ===== -->
+  <div class="dash-wrapper">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="dash-sidebar" id="sidebar">
+
+      <!-- Brand -->
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="bi bi-heart-pulse-fill"></i>
+        </div>
+        <span class="brand-text">NGO System</span>
+      </div>
+
+      <!-- Nav Menu -->
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li><a href="#" class="nav-link active"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-people"></i><span>Staff Management</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-building"></i><span>Center Management</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span>Emergency Alerts</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-bell"></i><span>Notifications</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-person-circle"></i><span>Profile</span></a></li>
+          <li><a href="#" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+        </ul>
+      </nav>
+
+      <!-- Sidebar Footer: Logout -->
+      <div class="sidebar-footer">
+        <a href="#" class="nav-link logout-link">
+          <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+        </a>
+      </div>
+
+    </aside>
+    <!-- ===== END SIDEBAR ===== -->
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <div class="dash-main">
+
+      <!-- ===== TOP NAVBAR ===== -->
+      <header class="dash-topbar">
+
+        <!-- Left: toggle + title -->
+        <div class="topbar-left">
+          <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="topbar-title">
+            <h4>Dashboard</h4>
+            <p>Welcome back, Admin</p>
+          </div>
+        </div>
+
+        <!-- Right: notifications, emergency, profile -->
+        <div class="topbar-right">
+
+          <!-- Notification Bell -->
+          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+            <i class="bi bi-bell-fill"></i>
+            <span class="badge-count">3</span>
+          </button>
+
+          <!-- Emergency Alert -->
+          <a href="#" class="topbar-icon-btn position-relative" title="Emergency Alerts">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span class="badge-count" style="background:#EF4444;">2</span>
+          </a>
+
+          <!-- Separator -->
+          <div class="topbar-separator"></div>
+
+          <!-- Date Selector -->
+          <div class="date-picker">
+            <i class="bi bi-calendar3"></i>
+            <span id="currentDate"></span>
+          </div>
+
+          <!-- Separator -->
+          <div class="topbar-separator"></div>
+
+          <!-- Profile -->
+          <div class="dropdown">
+            <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <div class="profile-avatar">AD</div>
+              <div class="profile-info d-none d-md-block">
+                <span class="profile-name">Admin</span>
+                <span class="profile-role">Administrator</span>
+              </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
+              <li><a class="dropdown-item py-2 px-3" href="#"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item py-2 px-3" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><a class="dropdown-item py-2 px-3 text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
+          </div>
+
+        </div>
+
+      </header>
+      <!-- ===== END TOP NAVBAR ===== -->
+
+      <!-- ===== PAGE CONTENT ===== -->
+      <div class="dash-content">
+
+        <!-- ===== STATISTICS CARDS ===== -->
+        <div class="row g-4 mb-4">
+
+          <!-- Card 1: Total Staff -->
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+              <div class="stat-icon bg-blue">
+                <i class="bi bi-people-fill"></i>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Total Staff</span>
+                <h3 class="stat-value">128</h3>
+                <span class="stat-subtitle">Active field workers</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Present Today -->
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+              <div class="stat-icon bg-green">
+                <i class="bi bi-person-check-fill"></i>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Present Today</span>
+                <h3 class="stat-value">94</h3>
+                <span class="stat-subtitle">73% attendance rate</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Absent Today -->
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+              <div class="stat-icon bg-red">
+                <i class="bi bi-person-x-fill"></i>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Absent Today</span>
+                <h3 class="stat-value">34</h3>
+                <span class="stat-subtitle">27% absent rate</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Emergency Alerts -->
+          <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+              <div class="stat-icon bg-orange">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Emergency Alerts</span>
+                <h3 class="stat-value">2</h3>
+                <span class="stat-subtitle">Requires attention</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- ===== END STATISTICS CARDS ===== -->
+
+        <!-- ===== TABLES SECTION ===== -->
+        <div class="row g-4">
+
+          <!-- Table 1: Present Staff -->
+          <div class="col-lg-6">
+            <div class="table-card">
+              <div class="table-card-header">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="table-title-icon bg-green"><i class="bi bi-check-lg"></i></div>
+                  <h5 class="mb-0">Present Today</h5>
+                  <span class="table-count">94</span>
+                </div>
+                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+              </div>
+              <div class="table-responsive">
+                <table class="dash-table">
+                  <thead>
+                    <tr>
+                      <th>Staff Name</th>
+                      <th>Status</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">AK</span>
+                          <span>Ahmed Khan</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
+                      <td>08:01 AM</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">FH</span>
+                          <span>Fatima Hassan</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
+                      <td>07:45 AM</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">MR</span>
+                          <span>Muhammad Riaz</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
+                      <td>08:15 AM</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">SN</span>
+                          <span>Sana Noor</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
+                      <td>07:55 AM</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table 2: Absent Staff -->
+          <div class="col-lg-6">
+            <div class="table-card">
+              <div class="table-card-header">
+                <div class="d-flex align-items-center gap-2">
+                  <div class="table-title-icon bg-red"><i class="bi bi-x-lg"></i></div>
+                  <h5 class="mb-0">Absent Today</h5>
+                  <span class="table-count" style="background:#FBE6E4;color:#C0392B;">34</span>
+                </div>
+                <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+              </div>
+              <div class="table-responsive">
+                <table class="dash-table">
+                  <thead>
+                    <tr>
+                      <th>Staff Name</th>
+                      <th>Status</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">UI</span>
+                          <span>Usman Iqbal</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
+                      <td>--:-- --</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">ZN</span>
+                          <span>Zainab Niazi</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
+                      <td>--:-- --</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">BA</span>
+                          <span>Bilal Ahmed</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
+                      <td>--:-- --</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="staff-cell">
+                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">AJ</span>
+                          <span>Aisha Jamil</span>
+                        </div>
+                      </td>
+                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
+                      <td>--:-- --</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- ===== END TABLES SECTION ===== -->
+
+      </div>
+      <!-- ===== END PAGE CONTENT ===== -->
+
+    </div>
+    <!-- ===== END MAIN CONTENT ===== -->
+
+  </div>
+  <!-- ===== END PAGE WRAPPER ===== -->
+
+  <!-- ===== MOBILE SIDEBAR OVERLAY ===== -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Custom Dashboard JS -->
+  <script src="/static/js/admin_dashboard.js"></script>
+</body>
+</html>

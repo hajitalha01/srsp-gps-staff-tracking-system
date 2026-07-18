@@ -1,0 +1,675 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Staff Management — Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-bar .form-control,
+  .filter-bar .form-select {
+    min-width: 140px;
+  }
+  .filter-bar .search-wrapper {
+    flex: 1;
+    min-width: 160px;
+  }
+  .action-toolbar .btn {
+    white-space: nowrap;
+  }
+  .table tbody td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+  .table tbody td .fw-semibold {
+    font-size: 0.875rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='staff' %}
+
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+
+    <!-- ===== Mobile Sidebar Toggle ===== -->
+    <div class="d-lg-none mb-3">
+      <button id="sidebarToggle"
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              aria-label="Toggle sidebar navigation"
+              aria-expanded="false"
+              aria-controls="sidebar">
+        <i class="fas fa-bars me-1" aria-hidden="true"></i> Menu
+      </button>
+    </div>
+
+    <!-- ============================================================
+         1. PAGE HEADER
+         ============================================================ -->
+    <div class="page-header">
+      <div>
+        <h3>Staff Management</h3>
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Staff Management</li>
+          </ol>
+        </nav>
+        <p class="text-muted mt-1 mb-0" style="font-size:0.8125rem">
+          Manage all field staff members, assign to centers, and control account access.
+        </p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         2. SUMMARY CARDS
+         ============================================================ -->
+    <div class="stat-grid" role="region" aria-label="Staff summary statistics">
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-accent" aria-hidden="true">
+            <i class="fas fa-users"></i>
+          </div>
+          <div>
+            <p class="stat-label">Total Staff</p>
+            <h4 class="stat-value">24</h4>
+          </div>
+        </div>
+        <small class="text-muted">All registered members</small>
+      </div>
+
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-primary" aria-hidden="true">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div>
+            <p class="stat-label">Active Staff</p>
+            <h4 class="stat-value">18</h4>
+          </div>
+        </div>
+        <small class="text-muted">Currently active</small>
+      </div>
+
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-warning" aria-hidden="true">
+            <i class="fas fa-user-clock"></i>
+          </div>
+          <div>
+            <p class="stat-label">Inactive Staff</p>
+            <h4 class="stat-value">6</h4>
+          </div>
+        </div>
+        <small class="text-muted">Suspended / deactivated</small>
+      </div>
+
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-info" aria-hidden="true">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div>
+            <p class="stat-label">New This Month</p>
+            <h4 class="stat-value">3</h4>
+          </div>
+        </div>
+        <small class="text-muted">Joined this month</small>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         3. ACTION TOOLBAR
+         ============================================================ -->
+    <div class="action-toolbar mb-3" role="toolbar" aria-label="Staff management actions">
+      <button type="button"
+              class="btn btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#addStaffModal"
+              aria-label="Add new staff member">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        Add Staff
+      </button>
+      <button type="button" class="btn btn-outline-secondary" aria-label="Export staff list as CSV">
+        <i class="fas fa-file-csv" aria-hidden="true"></i>
+        Export CSV
+      </button>
+      <button type="button" class="btn btn-outline-secondary" id="refreshBtn" aria-label="Refresh staff list">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+        Refresh
+      </button>
+    </div>
+
+    <!-- ============================================================
+         4. SEARCH & FILTER SECTION
+         ============================================================ -->
+    <div class="filter-bar" role="search" aria-label="Filter staff members">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by name..." aria-label="Search by name">
+      </div>
+      <div class="search-wrapper">
+        <i class="fas fa-envelope search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by email..." aria-label="Search by email">
+      </div>
+      <div class="search-wrapper">
+        <i class="fas fa-phone search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by phone..." aria-label="Search by phone">
+      </div>
+      <select class="form-select" aria-label="Filter by center">
+        <option value="">All Centers</option>
+        <option value="center-1">Center 1 — Gulshan</option>
+        <option value="center-2">Center 2 — Liaquatabad</option>
+        <option value="center-3">Center 3 — Korangi</option>
+        <option value="center-4">Center 4 — North Nazimabad</option>
+        <option value="center-5">Center 5 — Saddar</option>
+      </select>
+      <select class="form-select" aria-label="Filter by status">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <button type="button" class="btn btn-outline-secondary" aria-label="Reset all filters">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Reset
+      </button>
+    </div>
+
+    <!-- ============================================================
+         5. STAFF TABLE
+         ============================================================ -->
+    <div class="table-wrapper" role="region" aria-label="Staff members list">
+
+      <!-- Empty State (shown when no records exist) -->
+      <div class="empty-state d-none" id="emptyState">
+        <i class="fas fa-users-slash" aria-hidden="true"></i>
+        <h5>No staff records found</h5>
+        <p>There are no staff members matching your criteria.</p>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+          <i class="fas fa-plus" aria-hidden="true"></i>
+          Add Staff Member
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive">
+        <table class="table" aria-label="Staff members">
+          <thead>
+            <tr>
+              <th scope="col" class="avatar-col"></th>
+              <th scope="col">Staff ID</th>
+              <th scope="col">Full Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Phone</th>
+              <th scope="col">Center</th>
+              <th scope="col">Role</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for member in staff_list %}
+            <tr>
+              <td class="avatar-col">
+                <span class="staff-avatar"
+                      style="background:{% cycle 'var(--bg-accent)' 'var(--bg-success)' 'var(--bg-warning)' 'var(--bg-info)' 'var(--bg-danger)' as avatar_bg %};color:{% cycle 'var(--text-accent)' 'var(--text-success)' 'var(--text-warning)' 'var(--text-info)' 'var(--text-danger)' as avatar_fg %}"
+                      aria-hidden="true">
+                  {{ member.name|first|upper }}{{ member.name|cut:' '|slice:'1:2'|upper|default:'' }}
+                </span>
+              </td>
+              <td><span class="staff-id-tag">#{{ member.id|stringformat:"04d" }}</span></td>
+              <td><span class="fw-semibold">{{ member.name }}</span></td>
+              <td>{{ member.email }}</td>
+              <td>{{ member.phone }}</td>
+              <td>{{ member.center }}</td>
+              <td>{{ member.role|default:"Field Staff" }}</td>
+              <td>
+                <span class="status-badge {% if member.status == 'Active' %}active{% else %}inactive{% endif %}">
+                  <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
+                  {{ member.status }}
+                </span>
+              </td>
+              <td class="text-end table-actions-cell">
+                <button type="button"
+                        class="btn btn-icon btn-sm btn-outline-secondary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#viewStaffModal"
+                        data-staff-id="{{ member.id }}"
+                        data-staff-name="{{ member.name }}"
+                        title="View details"
+                        aria-label="View {{ member.name }}">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit {{ member.name }}">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button type="button"
+                        class="btn btn-icon btn-sm {% if member.status == 'Active' %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                        title="{% if member.status == 'Active' %}Deactivate{% else %}Activate{% endif %}"
+                        aria-label="{% if member.status == 'Active' %}Deactivate{% else %}Activate{% endif %} {{ member.name }}">
+                  <i class="fas {% if member.status == 'Active' %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                </button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete {{ member.name }}">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <!-- ===== Placeholder Demo Data ===== -->
+            <tr>
+              <td class="avatar-col"><span class="staff-avatar" style="background:var(--bg-accent);color:var(--text-accent)" aria-hidden="true">AH</span></td>
+              <td><span class="staff-id-tag">#0001</span></td>
+              <td><span class="fw-semibold">Ali Hassan</span></td>
+              <td>ali.hassan@srsp.org</td>
+              <td>0300-1234567</td>
+              <td>Center 5 — Saddar</td>
+              <td>Field Supervisor</td>
+              <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+              <td class="text-end table-actions-cell">
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewStaffModal" title="View" aria-label="View Ali Hassan"><i class="fas fa-eye"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Ali Hassan"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-warning" title="Deactivate" aria-label="Deactivate Ali Hassan"><i class="fas fa-toggle-on"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Ali Hassan"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            <tr>
+              <td class="avatar-col"><span class="staff-avatar" style="background:var(--bg-success);color:var(--text-success)" aria-hidden="true">SK</span></td>
+              <td><span class="staff-id-tag">#0002</span></td>
+              <td><span class="fw-semibold">Sara Khan</span></td>
+              <td>sara.khan@srsp.org</td>
+              <td>0300-2345678</td>
+              <td>Center 2 — Liaquatabad</td>
+              <td>Field Officer</td>
+              <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+              <td class="text-end table-actions-cell">
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewStaffModal" title="View" aria-label="View Sara Khan"><i class="fas fa-eye"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Sara Khan"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-warning" title="Deactivate" aria-label="Deactivate Sara Khan"><i class="fas fa-toggle-on"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Sara Khan"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            <tr>
+              <td class="avatar-col"><span class="staff-avatar" style="background:var(--bg-info);color:var(--text-info)" aria-hidden="true">NF</span></td>
+              <td><span class="staff-id-tag">#0003</span></td>
+              <td><span class="fw-semibold">Nida Fatima</span></td>
+              <td>nida.fatima@srsp.org</td>
+              <td>0300-3456789</td>
+              <td>Center 3 — Korangi</td>
+              <td>Field Officer</td>
+              <td><span class="status-badge inactive"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Inactive</span></td>
+              <td class="text-end table-actions-cell">
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewStaffModal" title="View" aria-label="View Nida Fatima"><i class="fas fa-eye"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Nida Fatima"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Activate" aria-label="Activate Nida Fatima"><i class="fas fa-toggle-off"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Nida Fatima"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            <tr>
+              <td class="avatar-col"><span class="staff-avatar" style="background:var(--bg-warning);color:var(--text-warning)" aria-hidden="true">MR</span></td>
+              <td><span class="staff-id-tag">#0004</span></td>
+              <td><span class="fw-semibold">Muhammad Riaz</span></td>
+              <td>m.riaz@srsp.org</td>
+              <td>0300-4567890</td>
+              <td>Center 1 — Gulshan</td>
+              <td>Center Manager</td>
+              <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+              <td class="text-end table-actions-cell">
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewStaffModal" title="View" aria-label="View Muhammad Riaz"><i class="fas fa-eye"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Muhammad Riaz"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-warning" title="Deactivate" aria-label="Deactivate Muhammad Riaz"><i class="fas fa-toggle-on"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Muhammad Riaz"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            <tr>
+              <td class="avatar-col"><span class="staff-avatar" style="background:var(--bg-danger);color:var(--text-danger)" aria-hidden="true">ZA</span></td>
+              <td><span class="staff-id-tag">#0005</span></td>
+              <td><span class="fw-semibold">Zainab Ali</span></td>
+              <td>zainab.ali@srsp.org</td>
+              <td>0300-5678901</td>
+              <td>Center 4 — North Nazimabad</td>
+              <td>Field Officer</td>
+              <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+              <td class="text-end table-actions-cell">
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewStaffModal" title="View" aria-label="View Zainab Ali"><i class="fas fa-eye"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Zainab Ali"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-warning" title="Deactivate" aria-label="Deactivate Zainab Ali"><i class="fas fa-toggle-on"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Zainab Ali"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            <tr>
+              <td class="avatar-col"><span class="staff-avatar" style="background:var(--bg-accent);color:var(--text-accent)" aria-hidden="true">FH</span></td>
+              <td><span class="staff-id-tag">#0006</span></td>
+              <td><span class="fw-semibold">Fahad Hussain</span></td>
+              <td>fahad.h@srsp.org</td>
+              <td>0300-6789012</td>
+              <td>Center 5 — Saddar</td>
+              <td>Field Officer</td>
+              <td><span class="status-badge inactive"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Inactive</span></td>
+              <td class="text-end table-actions-cell">
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewStaffModal" title="View" aria-label="View Fahad Hussain"><i class="fas fa-eye"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Fahad Hussain"><i class="fas fa-edit"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Activate" aria-label="Activate Fahad Hussain"><i class="fas fa-toggle-off"></i></button>
+                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Fahad Hussain"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ===== 6. PAGINATION ===== -->
+      <div class="pagination-nav" role="navigation" aria-label="Staff list pagination">
+        <span class="pagination-info">
+          Showing <strong>1</strong> to <strong>6</strong> of <strong>24</strong> staff members
+        </span>
+        <nav aria-label="Page navigation">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled">
+              <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Previous page">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+              </a>
+            </li>
+            <li class="page-item active" aria-current="page">
+              <a class="page-link" href="#">1</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Page 2">2</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Page 3">3</a>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">...</span>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Page 4">4</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="#" aria-label="Next page">
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+    <!-- /.table-wrapper -->
+
+  </div>
+  <!-- /.flex-1 content area -->
+</div>
+<!-- /.flex wrapper -->
+
+<!-- ============================================================
+     7. STAFF DETAIL MODAL
+     ============================================================ -->
+<div class="modal fade" id="viewStaffModal" tabindex="-1" aria-labelledby="viewStaffModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewStaffModalLabel">
+          <i class="fas fa-user me-2" aria-hidden="true" style="color:var(--srsp-accent)"></i>
+          Staff Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div class="staff-detail-avatar mx-auto mb-3" style="background:var(--bg-accent);color:var(--text-accent)" aria-hidden="true">
+            AH
+          </div>
+          <h5 class="mb-1" id="detailStaffName">Ali Hassan</h5>
+          <span class="status-badge active" id="detailStaffStatus">
+            <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
+            Active
+          </span>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="detail-label">Email Address</div>
+            <div class="detail-value" id="detailStaffEmail">ali.hassan@srsp.org</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Phone Number</div>
+            <div class="detail-value" id="detailStaffPhone">0300-1234567</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Staff ID</div>
+            <div class="detail-value" id="detailStaffId">#0001</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Role</div>
+            <div class="detail-value" id="detailStaffRole">Field Supervisor</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Assigned Center</div>
+            <div class="detail-value" id="detailStaffCenter">Center 5 — Saddar</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Joining Date</div>
+            <div class="detail-value" id="detailStaffDate">January 15, 2025</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="fas fa-edit" aria-hidden="true"></i>
+          Edit Profile
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     8. ADD STAFF MODAL
+     ============================================================ -->
+<div class="modal fade" id="addStaffModal" tabindex="-1" aria-labelledby="addStaffModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addStaffModalLabel">
+          <i class="fas fa-user-plus me-2" aria-hidden="true" style="color:var(--srsp-accent)"></i>
+          Add New Staff Member
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addStaffForm" novalidate>
+          <div class="row g-3">
+            <!-- Full Name -->
+            <div class="col-md-6">
+              <label for="staffName" class="form-label">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="staffName" placeholder="Enter full name" required aria-required="true">
+              <div class="invalid-feedback">Please enter a full name.</div>
+            </div>
+            <!-- Email -->
+            <div class="col-md-6">
+              <label for="staffEmail" class="form-label">Email Address <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="staffEmail" placeholder="Enter email address" required aria-required="true">
+              <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+            <!-- Phone Number -->
+            <div class="col-md-6">
+              <label for="staffPhone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+              <input type="tel" class="form-control" id="staffPhone" placeholder="03XX-XXXXXXX" required aria-required="true">
+              <div class="invalid-feedback">Please enter a valid phone number.</div>
+            </div>
+            <!-- Password -->
+            <div class="col-md-6">
+              <label for="staffPassword" class="form-label">Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="staffPassword" placeholder="Create a password" minlength="8" required aria-required="true">
+              <div class="invalid-feedback">Password must be at least 8 characters.</div>
+            </div>
+            <!-- Confirm Password -->
+            <div class="col-md-6">
+              <label for="staffConfirmPassword" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" id="staffConfirmPassword" placeholder="Confirm password" required aria-required="true">
+              <div class="invalid-feedback">Passwords do not match.</div>
+            </div>
+            <!-- Assigned Center -->
+            <div class="col-md-6">
+              <label for="staffCenter" class="form-label">Assigned Center <span class="text-danger">*</span></label>
+              <select class="form-select" id="staffCenter" required aria-required="true">
+                <option value="">Select a center</option>
+                <option value="center-1">Center 1 — Gulshan</option>
+                <option value="center-2">Center 2 — Liaquatabad</option>
+                <option value="center-3">Center 3 — Korangi</option>
+                <option value="center-4">Center 4 — North Nazimabad</option>
+                <option value="center-5">Center 5 — Saddar</option>
+              </select>
+              <div class="invalid-feedback">Please select a center.</div>
+            </div>
+            <!-- Role -->
+            <div class="col-md-6">
+              <label for="staffRole" class="form-label">Role <span class="text-danger">*</span></label>
+              <select class="form-select" id="staffRole" required aria-required="true">
+                <option value="">Select a role</option>
+                <option value="field-officer">Field Officer</option>
+                <option value="field-supervisor">Field Supervisor</option>
+                <option value="center-manager">Center Manager</option>
+                <option value="coordinator">Coordinator</option>
+              </select>
+              <div class="invalid-feedback">Please select a role.</div>
+            </div>
+            <!-- Status -->
+            <div class="col-md-6">
+              <label for="staffStatus" class="form-label">Status <span class="text-danger">*</span></label>
+              <select class="form-select" id="staffStatus" required aria-required="true">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="saveStaffBtn">
+          <i class="fas fa-save" aria-hidden="true"></i>
+          Save Staff Member
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  'use strict';
+
+  // ----- Refresh button spinner -----
+  var refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      var icon = this.querySelector('.fa-sync-alt');
+      if (icon) {
+        icon.classList.add('fa-spin');
+        this.disabled = true;
+        setTimeout(function() {
+          icon.classList.remove('fa-spin');
+          refreshBtn.disabled = false;
+          window.showToast('Staff list refreshed successfully', 'success');
+        }, 1200);
+      }
+    });
+  }
+
+  // ----- View Staff Modal: populate detail fields from button data -----
+  var viewModal = document.getElementById('viewStaffModal');
+  if (viewModal) {
+    viewModal.addEventListener('show.bs.modal', function(event) {
+      var button = event.relatedTarget;
+      // This is a UI placeholder — real data would come from the backend
+      var name = button.getAttribute('data-staff-name') || 'Staff Member';
+      document.getElementById('detailStaffName').textContent = name;
+    });
+  }
+
+  // ----- Add Staff Form: Save button validation -----
+  var saveBtn = document.getElementById('saveStaffBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      var form = document.getElementById('addStaffForm');
+      if (!form) return;
+
+      // Basic validation
+      var password = document.getElementById('staffPassword');
+      var confirm = document.getElementById('staffConfirmPassword');
+      var isValid = true;
+
+      form.querySelectorAll('[required]').forEach(function(input) {
+        if (!input.value.trim()) {
+          input.classList.add('is-invalid');
+          isValid = false;
+        } else {
+          input.classList.remove('is-invalid');
+        }
+      });
+
+      if (password && confirm && password.value !== confirm.value) {
+        confirm.classList.add('is-invalid');
+        isValid = false;
+      }
+
+      if (isValid) {
+        // Simulate saving
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
+        setTimeout(function() {
+          var modal = bootstrap.Modal.getInstance(document.getElementById('addStaffModal'));
+          if (modal) modal.hide();
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Save Staff Member';
+          window.showToast('Staff member added successfully', 'success');
+          form.reset();
+          form.querySelectorAll('.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
+        }, 1500);
+      }
+    });
+  }
+
+  // ----- Clear validation on input -----
+  document.querySelectorAll('#addStaffForm .form-control, #addStaffForm .form-select').forEach(function(input) {
+    input.addEventListener('input', function() {
+      this.classList.remove('is-invalid');
+    });
+    input.addEventListener('change', function() {
+      this.classList.remove('is-invalid');
+    });
+  });
+
+  // ----- Export CSV simulation -----
+  var exportBtn = document.querySelector('.btn-outline-secondary .fa-file-csv');
+  if (exportBtn) {
+    exportBtn.closest('button')?.addEventListener('click', function() {
+      window.showToast('Staff list exported as CSV', 'info');
+    });
+  }
+
+  // ----- Reset filters button -----
+  var resetBtn = document.querySelector('.filter-bar .btn-outline-secondary');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-bar .form-control, .filter-bar .form-select').forEach(function(el) {
+        el.value = '';
+      });
+      window.showToast('Filters have been reset', 'info');
+    });
+  }
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Admin{% endblock %}
+
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='dashboard' %}
+
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <h3 style="font-size:18px;margin:0">Dashboard</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin:2px 0 0">Welcome back, admin</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary)"></i>
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-accent)">AU</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px">
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Total staff</p><p style="font-size:22px;font-weight:500;margin:0">{{ total_staff|default:45 }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Present today</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-success)">{{ present_today|default:38 }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Absent today</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ absent_today|default:7 }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Emergency alerts</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ active_alerts|default:2 }}</p></div>
+    </div>
+
+    <div style="background:var(--surface-2);border-radius:8px;padding:16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <p style="font-size:14px;font-weight:500;margin:0">Recent attendance</p>
+        <a href="{% url 'admin_attendance' %}" style="font-size:12px;color:var(--text-accent)">View all</a>
+      </div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <tr style="color:var(--text-secondary)"><td style="padding:6px 0">Staff name</td><td>Center</td><td>Status</td><td>Time</td></tr>
+        <tr style="border-top:0.5px solid var(--border)"><td style="padding:6px 0">Ali Hassan</td><td>Center 5</td><td><span style="background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:20px;font-size:11px">Present</span></td><td>08:01 AM</td></tr>
+        <tr style="border-top:0.5px solid var(--border)"><td style="padding:6px 0">Sara Khan</td><td>Center 2</td><td><span style="background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:20px;font-size:11px">Present</span></td><td>08:05 AM</td></tr>
+        <tr style="border-top:0.5px solid var(--border)"><td style="padding:6px 0">Nida Fatima</td><td>Center 3</td><td><span style="background:var(--bg-danger);color:var(--text-danger);padding:2px 8px;border-radius:20px;font-size:11px">Absent</span></td><td>-</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login — SRSP Staff Tracking{% endblock title %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+{% endblock extra_css %}
+
+{% block body_start %}
+<div class="login-page min-vh-100 d-flex flex-column">
+{% endblock body_start %}
+
+{% block content %}
+
+  <!-- ===== LOGIN CARD ===== -->
+  <div class="login-wrapper d-flex align-items-center justify-content-center flex-grow-1 px-3 py-4">
+
+    <div class="login-card d-flex flex-column flex-lg-row rounded-4 overflow-hidden shadow-lg bg-white"
+         style="max-width:900px;width:100%;min-height:500px">
+
+      <!-- ===== LEFT: Brand Panel ===== -->
+      <div class="login-brand d-flex flex-column align-items-center justify-content-center text-center px-4 py-5 flex-lg-fill"
+           style="flex:1 1 45%;background:linear-gradient(135deg,#0B2E1F 0%,#123524 50%,#1F5C40 100%)">
+
+        <!-- Brand icon -->
+        <div class="d-flex align-items-center justify-content-center rounded-circle mb-3"
+             style="width:60px;height:60px;background:var(--srsp-accent)">
+          <i class="fas fa-map-pin fa-lg" style="color:var(--srsp-primary-dark)"></i>
+        </div>
+
+        <!-- Project name -->
+        <h2 class="text-white fw-semibold mb-2" style="font-size:1.25rem">
+          SRSP Staff Tracking
+        </h2>
+
+        <!-- Description -->
+        <p class="mb-0" style="font-size:0.8125rem;color:#A0C4B2;max-width:280px;line-height:1.6">
+          GPS-based attendance, location tracking and emergency management for field staff
+        </p>
+
+        <!-- Decorative illustration area -->
+        <div class="mt-4 d-none d-lg-flex align-items-center justify-content-center rounded-3"
+             style="width:200px;height:130px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08)">
+          <div class="text-center" style="color:rgba(255,255,255,0.2)">
+            <i class="fas fa-map-marked-alt fa-3x mb-2"></i>
+            <p class="mb-0" style="font-size:0.6875rem;letter-spacing:0.5px">LIVE GPS TRACKING</p>
+          </div>
+        </div>
+
+        <!-- Feature badges -->
+        <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
+          <span class="badge" style="background:rgba(47,191,143,0.15);color:var(--srsp-accent);font-size:0.6875rem">
+            <i class="fas fa-check-circle me-1"></i>GPS Attendance
+          </span>
+          <span class="badge" style="background:rgba(47,191,143,0.15);color:var(--srsp-accent);font-size:0.6875rem">
+            <i class="fas fa-check-circle me-1"></i>Live Tracking
+          </span>
+          <span class="badge" style="background:rgba(47,191,143,0.15);color:var(--srsp-accent);font-size:0.6875rem">
+            <i class="fas fa-check-circle me-1"></i>SOS Alerts
+          </span>
+        </div>
+
+      </div>
+
+      <!-- ===== RIGHT: Form Panel ===== -->
+      <div class="d-flex flex-column justify-content-center px-4 py-5 flex-lg-fill"
+           style="flex:1 1 55%;background:var(--surface-2)">
+
+        <!-- Heading -->
+        <h3 class="fw-semibold mb-1" style="font-size:1.375rem">Welcome back</h3>
+        <p class="mb-4" style="font-size:0.875rem;color:var(--text-secondary)">
+          Log in to your account to continue
+        </p>
+
+        <!-- ===== Django Messages ===== -->
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-dismissible fade show d-flex align-items-center gap-2 border-0 mb-3 py-2 px-3
+              {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}"
+              role="alert" style="font-size:0.8125rem;border-radius:var(--radius-md)">
+              <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+              <span>{{ message }}</span>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <!-- ===== Validation Error Area (frontend) ===== -->
+        <div id="loginErrors" class="d-none alert alert-danger d-flex align-items-center gap-2 border-0 mb-3 py-2 px-3"
+             role="alert" style="font-size:0.8125rem;border-radius:var(--radius-md)">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="loginErrorText"></span>
+        </div>
+
+        <!-- ===== Login Form ===== -->
+        <form id="loginForm" method="post" novalidate>
+          {% csrf_token %}
+
+          <!-- Email / Phone -->
+          <div class="mb-3">
+            <label for="loginIdentifier" class="form-label">Email or phone number</label>
+            <div class="input-group">
+              <span class="input-group-text border-end-0" style="background:var(--surface-2);border-color:var(--border-strong)">
+                <i class="fas fa-envelope" style="color:var(--text-muted);font-size:0.875rem"></i>
+              </span>
+              <input type="text"
+                     id="loginIdentifier"
+                     name="identifier"
+                     class="form-control border-start-0 ps-0"
+                     placeholder="name@srsp.org"
+                     required
+                     autocomplete="username"
+                     autofocus>
+            </div>
+            <div class="invalid-feedback" id="identifierError">Please enter your email or phone number.</div>
+          </div>
+
+          <!-- Password -->
+          <div class="mb-3">
+            <label for="loginPassword" class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text border-end-0" style="background:var(--surface-2);border-color:var(--border-strong)">
+                <i class="fas fa-lock" style="color:var(--text-muted);font-size:0.875rem"></i>
+              </span>
+              <input type="password"
+                     id="loginPassword"
+                     name="password"
+                     class="form-control border-start-0 border-end-0 ps-0"
+                     placeholder="Enter your password"
+                     required
+                     autocomplete="current-password">
+              <button type="button"
+                      id="passwordToggle"
+                      class="input-group-text border-start-0"
+                      style="background:var(--surface-2);border-color:var(--border-strong);cursor:pointer"
+                      aria-label="Toggle password visibility">
+                <i class="fas fa-eye" id="passwordIcon" style="color:var(--text-muted);font-size:0.875rem"></i>
+              </button>
+            </div>
+            <div class="invalid-feedback" id="passwordError">Please enter your password.</div>
+          </div>
+
+          <!-- Remember Me + Forgot Password -->
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
+              <label class="form-check-label" for="rememberMe" style="font-size:0.8125rem;color:var(--text-secondary)">
+                Remember me
+              </label>
+            </div>
+            <a href="#" class="text-decoration-none" style="font-size:0.8125rem;color:var(--srsp-accent)">
+              Forgot password?
+            </a>
+          </div>
+
+          <!-- Login Button -->
+          <button type="submit"
+                  id="loginBtn"
+                  class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                  style="font-size:0.9375rem">
+            <span id="loginBtnText">Log in</span>
+            <span id="loginBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+          </button>
+
+        </form>
+
+        <!-- Info text -->
+        <p class="text-center mt-3 mb-0" style="font-size:0.75rem;color:var(--text-muted)">
+          Admin and staff use the same login. Your role decides what you see next.
+        </p>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== LOGIN FOOTER ===== -->
+  <footer class="login-footer text-center py-3">
+    <p class="mb-0" style="font-size:0.6875rem;color:var(--text-muted)">
+      &copy; {% now "Y" %} SRSP Tracking System &mdash; GPS-Based Attendance &amp; Monitoring System
+    </p>
+  </footer>
+
+{% endblock content %}
+
+{% block body_end %}
+</div>
+{% endblock body_end %}
+
+{% block extra_js %}
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+(function() {
+  'use strict';
+
+  var form = document.getElementById('loginForm');
+  var identifier = document.getElementById('loginIdentifier');
+  var password = document.getElementById('loginPassword');
+  var loginBtn = document.getElementById('loginBtn');
+  var loginBtnText = document.getElementById('loginBtnText');
+  var loginBtnSpinner = document.getElementById('loginBtnSpinner');
+  var loginErrors = document.getElementById('loginErrors');
+  var loginErrorText = document.getElementById('loginErrorText');
+
+  // ----- Password visibility toggle -----
+  var passwordToggle = document.getElementById('passwordToggle');
+  var passwordIcon = document.getElementById('passwordIcon');
+  if (passwordToggle && password && passwordIcon) {
+    passwordToggle.addEventListener('click', function() {
+      var isPassword = password.getAttribute('type') === 'password';
+      password.setAttribute('type', isPassword ? 'text' : 'password');
+      passwordIcon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+    });
+  }
+
+  // ----- Frontend validation -----
+  function showError(element, feedbackId) {
+    element.classList.add('is-invalid');
+    var feedback = document.getElementById(feedbackId);
+    if (feedback) feedback.style.display = 'block';
+  }
+
+  function clearError(element, feedbackId) {
+    element.classList.remove('is-invalid');
+    var feedback = document.getElementById(feedbackId);
+    if (feedback) feedback.style.display = 'none';
+  }
+
+  function showAlert(message) {
+    loginErrors.classList.remove('d-none');
+    loginErrorText.textContent = message;
+  }
+
+  function hideAlert() {
+    loginErrors.classList.add('d-none');
+  }
+
+  // Clear errors on input
+  identifier.addEventListener('input', function() { clearError(identifier, 'identifierError'); hideAlert(); });
+  password.addEventListener('input', function() { clearError(password, 'passwordError'); hideAlert(); });
+
+  // ----- Form submit with loading state -----
+  form.addEventListener('submit', function(e) {
+    hideAlert();
+    var valid = true;
+
+    // Validate identifier
+    if (!identifier.value.trim()) {
+      showError(identifier, 'identifierError');
+      valid = false;
+    } else {
+      clearError(identifier, 'identifierError');
+    }
+
+    // Validate password
+    if (!password.value.trim()) {
+      showError(password, 'passwordError');
+      valid = false;
+    } else {
+      clearError(password, 'passwordError');
+    }
+
+    if (!valid) {
+      e.preventDefault();
+      showAlert('Please fill in all required fields.');
+      return;
+    }
+
+    // Loading state
+    loginBtn.disabled = true;
+    loginBtnText.textContent = 'Logging in...';
+    loginBtnSpinner.classList.remove('d-none');
+  });
+
+})();
+</script>
+{% endblock extra_js %}

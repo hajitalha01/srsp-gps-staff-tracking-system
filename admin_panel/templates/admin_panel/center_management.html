@@ -1,0 +1,794 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Center Management — Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-bar .form-control,
+  .filter-bar .form-select {
+    min-width: 140px;
+  }
+  .filter-bar .search-wrapper {
+    flex: 1;
+    min-width: 160px;
+  }
+  .action-toolbar .btn {
+    white-space: nowrap;
+  }
+  .table tbody td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+  .table tbody td .fw-semibold {
+    font-size: 0.875rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='centers' %}
+
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+
+    <!-- ===== Mobile Sidebar Toggle ===== -->
+    <div class="d-lg-none mb-3">
+      <button id="sidebarToggle"
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              aria-label="Toggle sidebar navigation"
+              aria-expanded="false"
+              aria-controls="sidebar">
+        <i class="fas fa-bars me-1" aria-hidden="true"></i> Menu
+      </button>
+    </div>
+
+    <!-- ============================================================
+         1. PAGE HEADER
+         ============================================================ -->
+    <div class="page-header">
+      <div>
+        <h3>Center Management</h3>
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Center Management</li>
+          </ol>
+        </nav>
+        <p class="text-muted mt-1 mb-0" style="font-size:0.8125rem">
+          Manage all education centers, view locations on map, and monitor center status across districts.
+        </p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         2. SUMMARY CARDS
+         ============================================================ -->
+    <div class="stat-grid" role="region" aria-label="Center summary statistics">
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-accent" aria-hidden="true">
+            <i class="fas fa-building"></i>
+          </div>
+          <div>
+            <p class="stat-label">Total Centers</p>
+            <h4 class="stat-value">{{ total_centers|default:"6" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Across KPK districts</small>
+      </div>
+
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-primary" aria-hidden="true">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div>
+            <p class="stat-label">Active Centers</p>
+            <h4 class="stat-value">{{ active_centers|default:"4" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Currently operational</small>
+      </div>
+
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-info" aria-hidden="true">
+            <i class="fas fa-users"></i>
+          </div>
+          <div>
+            <p class="stat-label">Assigned Staff</p>
+            <h4 class="stat-value">{{ total_staff|default:"23" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Across all centers</small>
+      </div>
+
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-warning" aria-hidden="true">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div>
+            <p class="stat-label">Avg. Attendance</p>
+            <h4 class="stat-value">{{ avg_attendance|default:"87" }}%</h4>
+          </div>
+        </div>
+        <small class="text-muted">Last 30 days</small>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         3. ACTION TOOLBAR
+         ============================================================ -->
+    <div class="action-toolbar mb-3" role="toolbar" aria-label="Center management actions">
+      <button type="button"
+              class="btn btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#addCenterModal"
+              aria-label="Add new education center">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        Add New Center
+      </button>
+      <button type="button" class="btn btn-outline-secondary" aria-label="Export centers list as CSV">
+        <i class="fas fa-file-csv" aria-hidden="true"></i>
+        Export CSV
+      </button>
+      <button type="button" class="btn btn-outline-secondary" id="refreshBtn" aria-label="Refresh centers data">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+        Refresh
+      </button>
+    </div>
+
+    <!-- ============================================================
+         4. SEARCH & FILTER SECTION
+         ============================================================ -->
+    <div class="filter-bar" role="search" aria-label="Filter education centers">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by center name..." aria-label="Search by center name">
+      </div>
+      <div class="search-wrapper">
+        <i class="fas fa-tag search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by center code..." aria-label="Search by center code">
+      </div>
+      <select class="form-select" aria-label="Filter by district">
+        <option value="">All Districts</option>
+        <option value="peshawar">Peshawar</option>
+        <option value="swabi">Swabi</option>
+        <option value="charsadda">Charsadda</option>
+        <option value="mardan">Mardan</option>
+        <option value="abbottabad">Abbottabad</option>
+        <option value="kohat">Kohat</option>
+      </select>
+      <select class="form-select" aria-label="Filter by status">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn" aria-label="Reset all filters">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Reset
+      </button>
+    </div>
+
+    <!-- ============================================================
+         MAIN CONTENT: TABLE + MAP SIDE BY SIDE
+         ============================================================ -->
+    <div class="row g-3">
+
+      <!-- -------- Left Column: Table -------- -->
+      <div class="col-xl-7">
+
+        <!-- ===== 5. CENTERS TABLE ===== -->
+        <div class="table-wrapper" role="region" aria-label="Education centers list">
+
+          <!-- Empty State -->
+          <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-school" aria-hidden="true"></i>
+            <h5>No centers found</h5>
+            <p>There are no education centers matching your criteria.</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCenterModal">
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              Add New Center
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table" aria-label="Education centers">
+              <thead>
+                <tr>
+                  <th scope="col">Center ID</th>
+                  <th scope="col">Center Name</th>
+                  <th scope="col">District</th>
+                  <th scope="col">Assigned Staff</th>
+                  <th scope="col">Geofence Radius</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for center in center_list %}
+                <tr>
+                  <td><span class="staff-id-tag">{{ center.code }}</span></td>
+                  <td><span class="fw-semibold">{{ center.name }}</span></td>
+                  <td>{{ center.district }}</td>
+                  <td>{{ center.staff_count }} staff</td>
+                  <td>{{ center.radius }}m</td>
+                  <td>
+                    <span class="status-badge {% if center.status == 'Active' %}active{% else %}inactive{% endif %}">
+                      <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
+                      {{ center.status }}
+                    </span>
+                  </td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button"
+                            class="btn btn-icon btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#viewCenterModal"
+                            title="View details"
+                            aria-label="View {{ center.name }}">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit {{ center.name }}">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete {{ center.name }}">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="{{ center.latitude|default:'0' }}" data-lng="{{ center.longitude|default:'0' }}" title="View on Map" aria-label="View {{ center.name }} on map">
+                      <i class="fas fa-map-marker-alt"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <!-- ===== Placeholder Demo Data ===== -->
+                <tr>
+                  <td><span class="staff-id-tag">C001</span></td>
+                  <td><span class="fw-semibold">Gulshan Center</span></td>
+                  <td>Peshawar</td>
+                  <td>4 staff</td>
+                  <td>200m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewCenterModal" title="View" aria-label="View Gulshan Center"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Gulshan Center"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Gulshan Center"><i class="fas fa-trash-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.015" data-lng="71.524" title="View on Map" aria-label="View Gulshan Center on map"><i class="fas fa-map-marker-alt"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">C002</span></td>
+                  <td><span class="fw-semibold">Swabi Center</span></td>
+                  <td>Swabi</td>
+                  <td>3 staff</td>
+                  <td>150m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewCenterModal" title="View" aria-label="View Swabi Center"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Swabi Center"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Swabi Center"><i class="fas fa-trash-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.120" data-lng="72.470" title="View on Map" aria-label="View Swabi Center on map"><i class="fas fa-map-marker-alt"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">C003</span></td>
+                  <td><span class="fw-semibold">Charsadda Center</span></td>
+                  <td>Charsadda</td>
+                  <td>5 staff</td>
+                  <td>250m</td>
+                  <td><span class="status-badge inactive"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Inactive</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewCenterModal" title="View" aria-label="View Charsadda Center"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Charsadda Center"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Charsadda Center"><i class="fas fa-trash-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.148" data-lng="71.735" title="View on Map" aria-label="View Charsadda Center on map"><i class="fas fa-map-marker-alt"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">C004</span></td>
+                  <td><span class="fw-semibold">Mardan Center</span></td>
+                  <td>Mardan</td>
+                  <td>2 staff</td>
+                  <td>180m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewCenterModal" title="View" aria-label="View Mardan Center"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Mardan Center"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Mardan Center"><i class="fas fa-trash-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.198" data-lng="72.040" title="View on Map" aria-label="View Mardan Center on map"><i class="fas fa-map-marker-alt"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">C005</span></td>
+                  <td><span class="fw-semibold">Abbottabad Center</span></td>
+                  <td>Abbottabad</td>
+                  <td>6 staff</td>
+                  <td>300m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewCenterModal" title="View" aria-label="View Abbottabad Center"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Abbottabad Center"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Abbottabad Center"><i class="fas fa-trash-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.146" data-lng="73.211" title="View on Map" aria-label="View Abbottabad Center on map"><i class="fas fa-map-marker-alt"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">C006</span></td>
+                  <td><span class="fw-semibold">Kohat Center</span></td>
+                  <td>Kohat</td>
+                  <td>3 staff</td>
+                  <td>200m</td>
+                  <td><span class="status-badge inactive"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Inactive</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewCenterModal" title="View" aria-label="View Kohat Center"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Kohat Center"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-danger" title="Delete" aria-label="Delete Kohat Center"><i class="fas fa-trash-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="33.589" data-lng="71.449" title="View on Map" aria-label="View Kohat Center on map"><i class="fas fa-map-marker-alt"></i></button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ===== 6. PAGINATION ===== -->
+          <div class="pagination-nav" role="navigation" aria-label="Centers list pagination">
+            <span class="pagination-info">
+              Showing <strong>1</strong> to <strong>6</strong> of <strong>{{ total_centers|default:"6" }}</strong> centers
+            </span>
+            <nav aria-label="Page navigation">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled">
+                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Previous page">
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                  </a>
+                </li>
+                <li class="page-item active" aria-current="page">
+                  <a class="page-link" href="#">1</a>
+                </li>
+                <li class="page-item disabled">
+                  <span class="page-link">...</span>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Next page">
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+
+        </div>
+        <!-- /.table-wrapper -->
+
+      </div>
+      <!-- /.col-xl-7 -->
+
+      <!-- -------- Right Column: Map -------- -->
+      <div class="col-xl-5">
+
+        <!-- ============================================================
+             8. INTERACTIVE MAP SECTION
+             ============================================================ -->
+        <div class="card map-card h-100" role="region" aria-label="Center locations map">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <h5 class="mb-0" style="font-size:0.9375rem">
+              <i class="fas fa-map-marked-alt me-2" style="color:var(--srsp-accent)" aria-hidden="true"></i>
+              Center Locations
+            </h5>
+            <small class="text-muted">KPK Region</small>
+          </div>
+          <div class="card-body">
+            <div id="centerMap" class="center-map"></div>
+            <!-- Custom Map Legend -->
+            <div class="map-legend-custom" aria-label="Map legend">
+              <span class="legend-row">
+                <span class="legend-dot active" aria-hidden="true"></span>
+                <span>Active Center</span>
+              </span>
+              <span class="legend-row">
+                <span class="legend-dot inactive" aria-hidden="true"></span>
+                <span>Inactive Center</span>
+              </span>
+            </div>
+          </div>
+          <div class="card-footer py-2">
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted">
+                <i class="fas fa-info-circle me-1" aria-hidden="true"></i>
+                Click a marker to view center details
+              </small>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="resetMapViewBtn" aria-label="Reset map view to default">
+                <i class="fas fa-crosshairs" aria-hidden="true"></i>
+                Reset View
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- /.col-xl-5 -->
+
+    </div>
+    <!-- /.row -->
+
+  </div>
+  <!-- /.flex-1 content area -->
+</div>
+<!-- /.flex wrapper -->
+
+<!-- ============================================================
+     7. CENTER DETAIL MODAL
+     ============================================================ -->
+<div class="modal fade" id="viewCenterModal" tabindex="-1" aria-labelledby="viewCenterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewCenterModalLabel">
+          <i class="fas fa-building me-2" aria-hidden="true" style="color:var(--srsp-accent)"></i>
+          Center Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+               style="width:72px;height:72px;background:var(--bg-accent);color:var(--text-accent);font-size:1.5rem" aria-hidden="true">
+            <i class="fas fa-school"></i>
+          </div>
+          <h5 class="mb-1" id="detailCenterName">Gulshan Center</h5>
+          <span class="status-badge active" id="detailCenterStatus">
+            <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
+            Active
+          </span>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <div class="detail-label">Center Code</div>
+            <div class="detail-value" id="detailCenterCode">C001</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">District</div>
+            <div class="detail-value" id="detailCenterDistrict">Peshawar</div>
+          </div>
+          <div class="col-12">
+            <div class="detail-label">Full Address</div>
+            <div class="detail-value" id="detailCenterAddress">Street 5, Gulshan Colony, Peshawar, KPK</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">GPS Coordinates</div>
+            <div class="detail-value" id="detailCenterCoords">34.015, 71.524</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Geofence Radius</div>
+            <div class="detail-value" id="detailCenterRadius">200 meters</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Assigned Staff</div>
+            <div class="detail-value" id="detailCenterStaff">4 members</div>
+          </div>
+          <div class="col-sm-6">
+            <div class="detail-label">Established</div>
+            <div class="detail-value" id="detailCenterEstablished">March 2022</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="fas fa-edit" aria-hidden="true"></i>
+          Edit Center
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     8. ADD CENTER MODAL
+     ============================================================ -->
+<div class="modal fade" id="addCenterModal" tabindex="-1" aria-labelledby="addCenterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCenterModalLabel">
+          <i class="fas fa-plus-circle me-2" aria-hidden="true" style="color:var(--srsp-accent)"></i>
+          Add New Center
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addCenterForm" novalidate>
+          <div class="row g-3">
+            <!-- Center Name -->
+            <div class="col-md-6">
+              <label for="centerName" class="form-label">Center Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="centerName" placeholder="e.g. Gulshan Center" required aria-required="true">
+              <div class="invalid-feedback">Please enter a center name.</div>
+            </div>
+            <!-- Center Code -->
+            <div class="col-md-6">
+              <label for="centerCode" class="form-label">Center Code <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="centerCode" placeholder="e.g. C007" required aria-required="true">
+              <div class="invalid-feedback">Please enter a center code.</div>
+            </div>
+            <!-- District -->
+            <div class="col-md-6">
+              <label for="centerDistrict" class="form-label">District <span class="text-danger">*</span></label>
+              <select class="form-select" id="centerDistrict" required aria-required="true">
+                <option value="">Select district</option>
+                <option value="peshawar">Peshawar</option>
+                <option value="swabi">Swabi</option>
+                <option value="charsadda">Charsadda</option>
+                <option value="mardan">Mardan</option>
+                <option value="abbottabad">Abbottabad</option>
+                <option value="kohat">Kohat</option>
+                <option value="nowshera">Nowshera</option>
+                <option value="dir">Dir</option>
+              </select>
+              <div class="invalid-feedback">Please select a district.</div>
+            </div>
+            <!-- Address -->
+            <div class="col-md-6">
+              <label for="centerAddress" class="form-label">Address <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="centerAddress" placeholder="Full address" required aria-required="true">
+              <div class="invalid-feedback">Please enter an address.</div>
+            </div>
+            <!-- Latitude -->
+            <div class="col-md-4">
+              <label for="centerLat" class="form-label">Latitude <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="centerLat" placeholder="e.g. 34.015" step="0.0001" required aria-required="true">
+              <div class="invalid-feedback">Please enter a valid latitude.</div>
+            </div>
+            <!-- Longitude -->
+            <div class="col-md-4">
+              <label for="centerLng" class="form-label">Longitude <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="centerLng" placeholder="e.g. 71.524" step="0.0001" required aria-required="true">
+              <div class="invalid-feedback">Please enter a valid longitude.</div>
+            </div>
+            <!-- Geofence Radius -->
+            <div class="col-md-4">
+              <label for="centerRadius" class="form-label">Geofence Radius (meters) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control" id="centerRadius" placeholder="e.g. 200" min="50" max="1000" required aria-required="true">
+              <div class="invalid-feedback">Enter a radius between 50–1000m.</div>
+            </div>
+            <!-- Status -->
+            <div class="col-md-6">
+              <label for="centerStatus" class="form-label">Status <span class="text-danger">*</span></label>
+              <select class="form-select" id="centerStatus" required aria-required="true">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="saveCenterBtn">
+          <i class="fas fa-save" aria-hidden="true"></i>
+          Save Center
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  'use strict';
+
+  /* ============================================================
+     Leaflet Map Initialization
+     ============================================================ */
+  var centerMapEl = document.getElementById('centerMap');
+  var map = null;
+
+  if (centerMapEl && typeof L !== 'undefined') {
+    // Initialize map centered on KPK region
+    map = L.map('centerMap', {
+      center: [34.0, 71.8],
+      zoom: 8,
+      zoomControl: true,
+      scrollWheelZoom: true,
+      attributionControl: true
+    });
+
+    // OpenStreetMap tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Center data for markers
+    var centers = [
+      { id: 'C001', name: 'Gulshan Center', district: 'Peshawar', lat: 34.015, lng: 71.524, status: 'Active', staff: 4 },
+      { id: 'C002', name: 'Swabi Center', district: 'Swabi', lat: 34.120, lng: 72.470, status: 'Active', staff: 3 },
+      { id: 'C003', name: 'Charsadda Center', district: 'Charsadda', lat: 34.148, lng: 71.735, status: 'Inactive', staff: 5 },
+      { id: 'C004', name: 'Mardan Center', district: 'Mardan', lat: 34.198, lng: 72.040, status: 'Active', staff: 2 },
+      { id: 'C005', name: 'Abbottabad Center', district: 'Abbottabad', lat: 34.146, lng: 73.211, status: 'Active', staff: 6 },
+      { id: 'C006', name: 'Kohat Center', district: 'Kohat', lat: 33.589, lng: 71.449, status: 'Inactive', staff: 3 }
+    ];
+
+    // Custom icon for active centers
+    var activeIcon = L.divIcon({
+      className: 'center-marker-icon active',
+      html: '<i class="fas fa-check" style="font-size:0.625rem"></i>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -16]
+    });
+
+    // Custom icon for inactive centers
+    var inactiveIcon = L.divIcon({
+      className: 'center-marker-icon inactive',
+      html: '<i class="fas fa-pause" style="font-size:0.625rem"></i>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      popupAnchor: [0, -16]
+    });
+
+    // Store markers for map-focus functionality
+    var markers = [];
+
+    // Add markers
+    centers.forEach(function(c) {
+      var marker = L.marker([c.lat, c.lng], {
+        icon: c.status === 'Active' ? activeIcon : inactiveIcon,
+        title: c.name
+      }).addTo(map);
+
+      // Popup with center details
+      var statusClass = c.status === 'Active' ? 'status-badge active' : 'status-badge inactive';
+      marker.bindPopup(
+        '<div style="min-width:180px;font-family:Inter,system-ui,sans-serif">' +
+          '<div style="font-size:1rem;font-weight:600;margin-bottom:4px">' + c.name + '</div>' +
+          '<div style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:6px">' + c.district + ' District</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;font-size:0.75rem;margin-bottom:8px">' +
+            '<span style="background:' + (c.status === 'Active' ? 'var(--bg-success)' : 'var(--bg-danger)') + ';color:' + (c.status === 'Active' ? 'var(--text-success)' : 'var(--text-danger)') + ';padding:2px 8px;border-radius:20px">' + c.status + '</span>' +
+            '<span style="color:var(--text-muted)">' + c.staff + ' staff</span>' +
+          '</div>' +
+          '<div style="font-size:0.6875rem;color:var(--text-muted)">' + c.id + ' &middot; ' + c.lat + ', ' + c.lng + '</div>' +
+        '</div>',
+        { closeButton: true, maxWidth: 260 }
+      );
+
+      markers.push(marker);
+    });
+
+    // Fit bounds to show all markers
+    var group = L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.15));
+
+    // ----- Map focus from table "View on Map" buttons -----
+    document.querySelectorAll('.map-focus-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var lat = parseFloat(this.getAttribute('data-lat'));
+        var lng = parseFloat(this.getAttribute('data-lng'));
+        if (!isNaN(lat) && !isNaN(lng) && map) {
+          map.setView([lat, lng], 14, { animate: true });
+          // Open popup for the nearest marker
+          markers.forEach(function(m) {
+            var mPos = m.getLatLng();
+            if (Math.abs(mPos.lat - lat) < 0.01 && Math.abs(mPos.lng - lng) < 0.01) {
+              m.openPopup();
+            }
+          });
+        }
+      });
+    });
+
+    // ----- Reset Map View -----
+    var resetMapBtn = document.getElementById('resetMapViewBtn');
+    if (resetMapBtn) {
+      resetMapBtn.addEventListener('click', function() {
+        map.closePopup();
+        map.fitBounds(group.getBounds().pad(0.15), { animate: true });
+      });
+    }
+  }
+
+  /* ============================================================
+     Refresh Button
+     ============================================================ */
+  var refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      var icon = this.querySelector('.fa-sync-alt');
+      if (icon) {
+        icon.classList.add('fa-spin');
+        this.disabled = true;
+        setTimeout(function() {
+          icon.classList.remove('fa-spin');
+          refreshBtn.disabled = false;
+          window.showToast('Center data refreshed successfully', 'success');
+        }, 1200);
+      }
+    });
+  }
+
+  /* ============================================================
+     Export CSV Simulation
+     ============================================================ */
+  var exportBtn = document.querySelector('.action-toolbar .btn-outline-secondary .fa-file-csv');
+  if (exportBtn) {
+    exportBtn.closest('button').addEventListener('click', function() {
+      window.showToast('Centers list exported as CSV', 'info');
+    });
+  }
+
+  /* ============================================================
+     Reset Filters
+     ============================================================ */
+  var resetFiltersBtn = document.getElementById('resetFiltersBtn');
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-bar .form-control, .filter-bar .form-select').forEach(function(el) {
+        el.value = '';
+      });
+      window.showToast('Filters have been reset', 'info');
+    });
+  }
+
+  /* ============================================================
+     Add Center Form: Save Button Validation
+     ============================================================ */
+  var saveBtn = document.getElementById('saveCenterBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      var form = document.getElementById('addCenterForm');
+      if (!form) return;
+
+      var isValid = true;
+
+      form.querySelectorAll('[required]').forEach(function(input) {
+        if (!input.value.trim()) {
+          input.classList.add('is-invalid');
+          isValid = false;
+        } else {
+          input.classList.remove('is-invalid');
+        }
+      });
+
+      if (isValid) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Saving...';
+        setTimeout(function() {
+          var modal = bootstrap.Modal.getInstance(document.getElementById('addCenterModal'));
+          if (modal) modal.hide();
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Save Center';
+          window.showToast('New center added successfully', 'success');
+          form.reset();
+          form.querySelectorAll('.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
+        }, 1500);
+      }
+    });
+  }
+
+  /* ============================================================
+     Clear validation on input
+     ============================================================ */
+  document.querySelectorAll('#addCenterForm .form-control, #addCenterForm .form-select').forEach(function(input) {
+    input.addEventListener('input', function() {
+      this.classList.remove('is-invalid');
+    });
+    input.addEventListener('change', function() {
+      this.classList.remove('is-invalid');
+    });
+  });
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,781 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Attendance Management — Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-bar .form-control,
+  .filter-bar .form-select {
+    min-width: 130px;
+  }
+  .filter-bar .search-wrapper {
+    flex: 1;
+    min-width: 150px;
+  }
+  .action-toolbar .btn {
+    white-space: nowrap;
+  }
+  .table tbody td {
+    font-size: 0.8125rem;
+    vertical-align: middle;
+  }
+  .table tbody td .fw-semibold {
+    font-size: 0.875rem;
+  }
+  @media (max-width: 767.98px) {
+    .filter-bar {
+      flex-direction: column;
+    }
+    .filter-bar .form-control,
+    .filter-bar .form-select,
+    .filter-bar .search-wrapper {
+      min-width: 100%;
+      width: 100% !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='attendance' %}
+
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+
+    <!-- ===== Mobile Sidebar Toggle ===== -->
+    <div class="d-lg-none mb-3">
+      <button id="sidebarToggle"
+              class="btn btn-sm btn-outline-secondary"
+              type="button"
+              aria-label="Toggle sidebar navigation"
+              aria-expanded="false"
+              aria-controls="sidebar">
+        <i class="fas fa-bars me-1" aria-hidden="true"></i> Menu
+      </button>
+    </div>
+
+    <!-- ============================================================
+         1. PAGE HEADER
+         ============================================================ -->
+    <div class="page-header">
+      <div>
+        <h3>Attendance Management</h3>
+        <nav aria-label="Breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Attendance Management</li>
+          </ol>
+        </nav>
+        <p class="text-muted mt-1 mb-0" style="font-size:0.8125rem">
+          Monitor daily staff attendance, verify GPS check-ins, and track working hours across all centers.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== Date Range Tabs ===== -->
+    <div class="tab-filters mb-3" role="tablist" aria-label="Attendance date range">
+      <button class="tab-item active" type="button" role="tab" aria-selected="true" aria-label="Today's attendance">Today</button>
+      <button class="tab-item" type="button" role="tab" aria-selected="false" aria-label="Last 7 days attendance">Last 7 Days</button>
+      <button class="tab-item" type="button" role="tab" aria-selected="false" aria-label="Last 30 days attendance">Last 30 Days</button>
+      <button class="tab-item" type="button" role="tab" aria-selected="false" aria-label="Custom date range">Custom Range</button>
+    </div>
+
+    <!-- ============================================================
+         2. SUMMARY CARDS (6)
+         ============================================================ -->
+    <div class="stat-grid mb-3" role="region" aria-label="Attendance summary">
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-accent" aria-hidden="true">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div>
+            <p class="stat-label">Total Today</p>
+            <h4 class="stat-value">{{ total_today|default:"28" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Expected staff</small>
+      </div>
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-primary" aria-hidden="true">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div>
+            <p class="stat-label">Present</p>
+            <h4 class="stat-value">{{ present_count|default:"21" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Checked in</small>
+      </div>
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-danger" aria-hidden="true">
+            <i class="fas fa-user-slash"></i>
+          </div>
+          <div>
+            <p class="stat-label">Absent</p>
+            <h4 class="stat-value">{{ absent_count|default:"4" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">No check-in</small>
+      </div>
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-warning" aria-hidden="true">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div>
+            <p class="stat-label">Late Arrivals</p>
+            <h4 class="stat-value">{{ late_count|default:"3" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">After 9:00 AM</small>
+      </div>
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-info" aria-hidden="true">
+            <i class="fas fa-sign-out-alt"></i>
+          </div>
+          <div>
+            <p class="stat-label">Early Check-Out</p>
+            <h4 class="stat-value">{{ early_checkout|default:"2" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Before 4:00 PM</small>
+      </div>
+      <div class="stat-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <div class="stat-icon icon-bg-accent" aria-hidden="true">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div>
+            <p class="stat-label">Pending Check-Out</p>
+            <h4 class="stat-value">{{ pending_checkout|default:"5" }}</h4>
+          </div>
+        </div>
+        <small class="text-muted">Still on duty</small>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         3. ACTION TOOLBAR
+         ============================================================ -->
+    <div class="action-toolbar mb-3" role="toolbar" aria-label="Attendance actions">
+      <button type="button" class="btn btn-outline-secondary" aria-label="Export attendance as CSV">
+        <i class="fas fa-file-csv" aria-hidden="true"></i>
+        Export CSV
+      </button>
+      <button type="button" class="btn btn-outline-secondary" aria-label="Export attendance as PDF">
+        <i class="fas fa-file-pdf" aria-hidden="true"></i>
+        Export PDF
+      </button>
+      <button type="button" class="btn btn-outline-secondary" aria-label="Print attendance report">
+        <i class="fas fa-print" aria-hidden="true"></i>
+        Print Report
+      </button>
+      <button type="button" class="btn btn-outline-secondary" id="refreshBtn" aria-label="Refresh attendance data">
+        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+        Refresh
+      </button>
+    </div>
+
+    <!-- ============================================================
+         4. SEARCH & FILTER SECTION
+         ============================================================ -->
+    <div class="filter-bar" role="search" aria-label="Filter attendance records">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by staff name..." aria-label="Search by staff name">
+      </div>
+      <div class="search-wrapper">
+        <i class="fas fa-id-badge search-icon" aria-hidden="true"></i>
+        <input type="text" class="form-control" placeholder="Search by staff ID..." aria-label="Search by staff ID">
+      </div>
+      <select class="form-select" aria-label="Filter by center">
+        <option value="">All Centers</option>
+        <option>Center 1 — Gulshan</option>
+        <option>Center 2 — Liaquatabad</option>
+        <option>Center 3 — Korangi</option>
+        <option>Center 4 — North Nazimabad</option>
+        <option>Center 5 — Saddar</option>
+      </select>
+      <select class="form-select" aria-label="Filter by attendance status">
+        <option value="">All Status</option>
+        <option>Present</option>
+        <option>Absent</option>
+        <option>Late</option>
+        <option>Early Check-Out</option>
+        <option>Pending Check-Out</option>
+      </select>
+      <input type="date" class="form-select" style="min-width:140px" aria-label="Filter by date">
+      <select class="form-select" aria-label="Filter by check-in time">
+        <option value="">Check-In Time</option>
+        <option>Before 8:00 AM</option>
+        <option>8:00 – 9:00 AM</option>
+        <option>After 9:00 AM</option>
+      </select>
+      <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn" aria-label="Reset all filters">
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Reset
+      </button>
+    </div>
+
+    <!-- ============================================================
+         MAIN CONTENT: TABLE + SIDEBAR
+         ============================================================ -->
+    <div class="row g-3">
+
+      <!-- -------- Left Column: Attendance Table -------- -->
+      <div class="col-xl-8">
+
+        <!-- ===== 5. ATTENDANCE TABLE ===== -->
+        <div class="table-wrapper" role="region" aria-label="Attendance records">
+
+          <!-- Empty State -->
+          <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-calendar-times" aria-hidden="true"></i>
+            <h5>No attendance records found</h5>
+            <p>There are no attendance records matching your criteria for the selected period.</p>
+            <button type="button" class="btn btn-primary" id="resetFiltersFromEmptyBtn">
+              <i class="fas fa-undo" aria-hidden="true"></i>
+              Reset Filters
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table" aria-label="Daily attendance records">
+              <thead>
+                <tr>
+                  <th scope="col">Staff ID</th>
+                  <th scope="col">Staff Name</th>
+                  <th scope="col">Center</th>
+                  <th scope="col">Check-In</th>
+                  <th scope="col">Check-Out</th>
+                  <th scope="col">Hours</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">GPS</th>
+                  <th scope="col" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in attendance_list %}
+                <tr>
+                  <td><span class="staff-id-tag">{{ record.staff_id }}</span></td>
+                  <td><span class="fw-semibold">{{ record.name }}</span></td>
+                  <td>{{ record.center }}</td>
+                  <td>{{ record.check_in|default:"—" }}</td>
+                  <td>{{ record.check_out|default:"—" }}</td>
+                  <td>{{ record.hours|default:"—" }}</td>
+                  <td>
+                    <span class="status-badge {{ record.status_class }}">
+                      <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
+                      {{ record.status }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if record.gps == 'Verified' %}
+                    <span class="status-badge active" style="font-size:0.6875rem">
+                      <i class="fas fa-check-circle" style="font-size:0.625rem" aria-hidden="true"></i>
+                      Verified
+                    </span>
+                    {% else %}
+                    <span class="status-badge inactive" style="font-size:0.6875rem">
+                      <i class="fas fa-times-circle" style="font-size:0.625rem" aria-hidden="true"></i>
+                      Unverified
+                    </span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button"
+                            class="btn btn-icon btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#viewAttendanceModal"
+                            title="View details"
+                            aria-label="View {{ record.name }} attendance">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="View location on map" aria-label="View {{ record.name }} location">
+                      <i class="fas fa-map-marker-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit attendance" aria-label="Edit {{ record.name }} attendance">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% empty %}
+                <!-- ===== Placeholder Demo Data ===== -->
+                <tr>
+                  <td><span class="staff-id-tag">#0001</span></td>
+                  <td><span class="fw-semibold">Ali Hassan</span></td>
+                  <td>Center 5 — Saddar</td>
+                  <td>08:02 AM</td>
+                  <td>05:10 PM</td>
+                  <td>8h 08m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span></td>
+                  <td><span class="status-badge active" style="font-size:0.6875rem"><i class="fas fa-check-circle" style="font-size:0.625rem" aria-hidden="true"></i> Verified</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewAttendanceModal" title="View" aria-label="View Ali Hassan"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="Location" aria-label="View Ali Hassan location"><i class="fas fa-map-marker-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Ali Hassan"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">#0002</span></td>
+                  <td><span class="fw-semibold">Sara Khan</span></td>
+                  <td>Center 2 — Liaquatabad</td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td><span class="status-badge inactive"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Absent</span></td>
+                  <td><span class="status-badge inactive" style="font-size:0.6875rem"><i class="fas fa-times-circle" style="font-size:0.625rem" aria-hidden="true"></i> Unverified</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewAttendanceModal" title="View" aria-label="View Sara Khan"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="Location" aria-label="View Sara Khan location"><i class="fas fa-map-marker-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Sara Khan"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">#0003</span></td>
+                  <td><span class="fw-semibold">Hina Yousaf</span></td>
+                  <td>Center 3 — Korangi</td>
+                  <td>09:45 AM</td>
+                  <td>05:10 PM</td>
+                  <td>7h 25m</td>
+                  <td><span class="status-badge late"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Late</span></td>
+                  <td><span class="status-badge active" style="font-size:0.6875rem"><i class="fas fa-check-circle" style="font-size:0.625rem" aria-hidden="true"></i> Verified</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewAttendanceModal" title="View" aria-label="View Hina Yousaf"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="Location" aria-label="View Hina Yousaf location"><i class="fas fa-map-marker-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Hina Yousaf"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">#0004</span></td>
+                  <td><span class="fw-semibold">Muhammad Riaz</span></td>
+                  <td>Center 1 — Gulshan</td>
+                  <td>07:55 AM</td>
+                  <td>03:30 PM</td>
+                  <td>7h 35m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Early Out</span></td>
+                  <td><span class="status-badge active" style="font-size:0.6875rem"><i class="fas fa-check-circle" style="font-size:0.625rem" aria-hidden="true"></i> Verified</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewAttendanceModal" title="View" aria-label="View Muhammad Riaz"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="Location" aria-label="View Muhammad Riaz location"><i class="fas fa-map-marker-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Muhammad Riaz"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">#0005</span></td>
+                  <td><span class="fw-semibold">Zainab Ali</span></td>
+                  <td>Center 4 — North Nazimabad</td>
+                  <td>08:30 AM</td>
+                  <td>—</td>
+                  <td>In progress</td>
+                  <td><span class="status-badge late"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Pending Out</span></td>
+                  <td><span class="status-badge active" style="font-size:0.6875rem"><i class="fas fa-check-circle" style="font-size:0.625rem" aria-hidden="true"></i> Verified</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewAttendanceModal" title="View" aria-label="View Zainab Ali"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="Location" aria-label="View Zainab Ali location"><i class="fas fa-map-marker-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Zainab Ali"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="staff-id-tag">#0006</span></td>
+                  <td><span class="fw-semibold">Fahad Hussain</span></td>
+                  <td>Center 5 — Saddar</td>
+                  <td>08:15 AM</td>
+                  <td>05:05 PM</td>
+                  <td>8h 50m</td>
+                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span></td>
+                  <td><span class="status-badge active" style="font-size:0.6875rem"><i class="fas fa-check-circle" style="font-size:0.625rem" aria-hidden="true"></i> Verified</span></td>
+                  <td class="text-end table-actions-cell">
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewAttendanceModal" title="View" aria-label="View Fahad Hussain"><i class="fas fa-eye"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-info" title="Location" aria-label="View Fahad Hussain location"><i class="fas fa-map-marker-alt"></i></button>
+                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Edit" aria-label="Edit Fahad Hussain"><i class="fas fa-edit"></i></button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination-nav" role="navigation" aria-label="Attendance records pagination">
+            <span class="pagination-info">
+              Showing <strong>1</strong> to <strong>6</strong> of <strong>{{ total_today|default:"28" }}</strong> records
+            </span>
+            <nav aria-label="Page navigation">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled">
+                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Previous page">
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                  </a>
+                </li>
+                <li class="page-item active" aria-current="page">
+                  <a class="page-link" href="#">1</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Page 2">2</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Page 3">3</a>
+                </li>
+                <li class="page-item disabled">
+                  <span class="page-link">...</span>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Page 5">5</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="#" aria-label="Next page">
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          </div>
+
+        </div>
+        <!-- /.table-wrapper -->
+
+      </div>
+      <!-- /.col-xl-8 -->
+
+      <!-- -------- Right Column: GPS + Stats + Activity -------- -->
+      <div class="col-xl-4 d-flex flex-column gap-3">
+
+        <!-- ============================================================
+             7. GPS VERIFICATION CARD
+             ============================================================ -->
+        <div class="card" role="region" aria-label="GPS verification status">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="fas fa-satellite-dish" style="color:var(--srsp-accent);font-size:1rem" aria-hidden="true"></i>
+            <h5 class="mb-0" style="font-size:0.875rem">GPS Verification</h5>
+          </div>
+          <div class="card-body py-3">
+            <div class="gps-row">
+              <span class="gps-label"><i class="fas fa-check-circle me-1" style="color:var(--text-success);font-size:0.75rem" aria-hidden="true"></i> GPS Verified</span>
+              <span class="status-badge active" style="font-size:0.75rem">21 of 28</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label"><i class="fas fa-draw-polygon me-1" style="color:var(--text-info);font-size:0.75rem" aria-hidden="true"></i> Geofence Status</span>
+              <span class="status-badge active" style="font-size:0.75rem">Within Range</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label"><i class="fas fa-map-pin me-1" style="color:var(--text-warning);font-size:0.75rem" aria-hidden="true"></i> Last Location</span>
+              <span class="gps-value" style="font-size:0.75rem">34.0151, 71.5249</span>
+            </div>
+            <div class="gps-row">
+              <span class="gps-label"><i class="fas fa-bullseye me-1" style="color:var(--text-accent);font-size:0.75rem" aria-hidden="true"></i> GPS Accuracy</span>
+              <span class="gps-value"><span class="status-badge active" style="font-size:0.75rem">±8 meters</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             8. ATTENDANCE STATISTICS
+             ============================================================ -->
+        <div role="region" aria-label="Attendance statistics">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="fas fa-chart-bar" style="color:var(--srsp-accent);font-size:1rem" aria-hidden="true"></i>
+            <h5 class="mb-0" style="font-size:0.875rem">Attendance Statistics</h5>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="stat-mini">
+                <p class="stat-mini-value" style="color:var(--text-success)">{{ weekly_attendance|default:"89" }}%</p>
+                <p class="stat-mini-label">Weekly Attendance</p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-mini">
+                <p class="stat-mini-value" style="color:var(--text-info)">{{ monthly_attendance|default:"92" }}%</p>
+                <p class="stat-mini-label">Monthly Attendance</p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-mini">
+                <p class="stat-mini-value" style="color:var(--text-accent)">{{ attendance_pct|default:"85" }}%</p>
+                <p class="stat-mini-label">Overall Percentage</p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-mini">
+                <p class="stat-mini-value" style="color:var(--text-warning)">{{ avg_hours|default:"7.8" }}</p>
+                <p class="stat-mini-label">Avg. Hours / Day</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             9. RECENT ATTENDANCE ACTIVITY
+             ============================================================ -->
+        <div class="card" role="region" aria-label="Recent attendance activity">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="fas fa-bolt" style="color:var(--srsp-accent);font-size:1rem" aria-hidden="true"></i>
+            <h5 class="mb-0" style="font-size:0.875rem">Recent Activity</h5>
+          </div>
+          <div class="card-body py-3">
+            <div class="attend-timeline">
+              <div class="attend-timeline-item">
+                <span class="attend-timeline-dot dot-success" aria-hidden="true"><i class="fas fa-check fa-xs"></i></span>
+                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Fahad Hussain checked in</p>
+                <small class="text-muted" style="font-size:0.6875rem">08:15 AM · Center 5</small>
+              </div>
+              <div class="attend-timeline-item">
+                <span class="attend-timeline-dot dot-success" aria-hidden="true"><i class="fas fa-check fa-xs"></i></span>
+                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Zainab Ali checked in</p>
+                <small class="text-muted" style="font-size:0.6875rem">08:30 AM · Center 4</small>
+              </div>
+              <div class="attend-timeline-item">
+                <span class="attend-timeline-dot dot-warning" aria-hidden="true"><i class="fas fa-exclamation fa-xs"></i></span>
+                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Hina Yousaf — Late arrival</p>
+                <small class="text-muted" style="font-size:0.6875rem">09:45 AM · Center 3</small>
+              </div>
+              <div class="attend-timeline-item">
+                <span class="attend-timeline-dot dot-info" aria-hidden="true"><i class="fas fa-pen fa-xs"></i></span>
+                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Attendance updated for Sara Khan</p>
+                <small class="text-muted" style="font-size:0.6875rem">10:30 AM · Admin</small>
+              </div>
+              <div class="attend-timeline-item">
+                <span class="attend-timeline-dot dot-success" aria-hidden="true"><i class="fas fa-check fa-xs"></i></span>
+                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Muhammad Riaz checked out</p>
+                <small class="text-muted" style="font-size:0.6875rem">03:30 PM · Center 1</small>
+              </div>
+              <div class="attend-timeline-item">
+                <span class="attend-timeline-dot dot-danger" aria-hidden="true"><i class="fas fa-times fa-xs"></i></span>
+                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Sara Khan marked absent</p>
+                <small class="text-muted" style="font-size:0.6875rem">09:00 AM · System</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- /.col-xl-4 -->
+
+    </div>
+    <!-- /.row -->
+
+  </div>
+  <!-- /.flex-1 -->
+</div>
+<!-- /.flex wrapper -->
+
+<!-- ============================================================
+     6. ATTENDANCE DETAILS MODAL
+     ============================================================ -->
+<div class="modal fade" id="viewAttendanceModal" tabindex="-1" aria-labelledby="viewAttendanceModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="viewAttendanceModalLabel">
+          <i class="fas fa-clipboard-check me-2" aria-hidden="true" style="color:var(--srsp-accent)"></i>
+          Attendance Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Profile header -->
+        <div class="d-flex align-items-center gap-3 mb-4 pb-3" style="border-bottom:0.5px solid var(--border)">
+          <div class="staff-detail-avatar flex-shrink-0" style="background:var(--bg-accent);color:var(--text-accent)" aria-hidden="true">AH</div>
+          <div>
+            <h5 class="mb-1" id="modalStaffName">Ali Hassan</h5>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="staff-id-tag" id="modalStaffId">#0001</span>
+              <span class="text-muted" style="font-size:0.8125rem" id="modalStaffCenter">Center 5 — Saddar</span>
+              <span class="status-badge active" id="modalAttendStatus"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <!-- Left: Attendance fields -->
+          <div class="col-md-7">
+            <h6 class="text-muted mb-2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em">
+              <i class="fas fa-clock me-1" aria-hidden="true"></i> Time Details
+            </h6>
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <div class="detail-label">Date</div>
+                <div class="detail-value" id="modalAttendDate">July 18, 2026</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="detail-label">Check-In Time</div>
+                <div class="detail-value" id="modalCheckIn">08:02 AM</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="detail-label">Check-Out Time</div>
+                <div class="detail-value" id="modalCheckOut">05:10 PM</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="detail-label">Total Working Hours</div>
+                <div class="detail-value" id="modalWorkHours">8h 08m</div>
+              </div>
+            </div>
+
+            <h6 class="text-muted mt-3 mb-2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em">
+              <i class="fas fa-map-marked-alt me-1" aria-hidden="true"></i> GPS &amp; Location
+            </h6>
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <div class="detail-label">GPS Coordinates</div>
+                <div class="detail-value" id="modalGpsCoords" style="font-size:0.8125rem">34.0151, 71.5249</div>
+              </div>
+              <div class="col-sm-6">
+                <div class="detail-label">GPS Verification</div>
+                <div class="detail-value"><span class="status-badge active" style="font-size:0.75rem"><i class="fas fa-check-circle" aria-hidden="true"></i> Verified</span></div>
+              </div>
+              <div class="col-12">
+                <div class="detail-label">Remarks</div>
+                <div class="detail-value" id="modalRemarks" style="font-weight:400">On-time arrival. GPS within geofence radius.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Mini map -->
+          <div class="col-md-5">
+            <h6 class="text-muted mb-2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em">
+              <i class="fas fa-map me-1" aria-hidden="true"></i> Check-In Location
+            </h6>
+            <div id="modalAttendanceMap" style="height:200px;border-radius:var(--radius-md);border:0.5px solid var(--border);background:var(--surface-1)"></div>
+            <div class="d-flex justify-content-between mt-2">
+              <small class="text-muted">Geofence: <strong>Within range</strong></small>
+              <small class="text-muted">Accuracy: <strong>±5m</strong></small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Close
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          <i class="fas fa-edit" aria-hidden="true"></i>
+          Edit Attendance
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  'use strict';
+
+  /* ============================================================
+     Refresh Button
+     ============================================================ */
+  var refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function() {
+      var icon = this.querySelector('.fa-sync-alt');
+      if (icon) {
+        icon.classList.add('fa-spin');
+        this.disabled = true;
+        setTimeout(function() {
+          icon.classList.remove('fa-spin');
+          refreshBtn.disabled = false;
+          window.showToast('Attendance data refreshed', 'success');
+        }, 1200);
+      }
+    });
+  }
+
+  /* ============================================================
+     Export / Print Buttons (simulation)
+     ============================================================ */
+  document.querySelectorAll('.action-toolbar .btn-outline-secondary').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      var text = this.textContent.trim();
+      if (text === 'Refresh') return;
+      if (text === 'Print Report') {
+        window.showToast('Print dialog would open', 'info');
+      } else {
+        window.showToast('Attendance ' + text.toLowerCase() + ' generated', 'info');
+      }
+    });
+  });
+
+  /* ============================================================
+     Reset Filters
+     ============================================================ */
+  var resetBtn = document.getElementById('resetFiltersBtn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-bar .form-control, .filter-bar .form-select, .filter-bar input[type="date"]').forEach(function(el) {
+        el.value = '';
+      });
+      window.showToast('Filters have been reset', 'info');
+    });
+  }
+
+  /* ============================================================
+     Date Range Tabs (toggle active state)
+     ============================================================ */
+  document.querySelectorAll('.tab-filters .tab-item').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab-filters .tab-item').forEach(function(t) {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      this.classList.add('active');
+      this.setAttribute('aria-selected', 'true');
+    });
+  });
+
+  /* ============================================================
+     Attendance Details Modal: Mini Map
+     ============================================================ */
+  var attendModal = document.getElementById('viewAttendanceModal');
+  if (attendModal && typeof L !== 'undefined') {
+    attendModal.addEventListener('shown.bs.modal', function() {
+      var mapEl = document.getElementById('modalAttendanceMap');
+      if (!mapEl || mapEl._leaflet_map) return;
+
+      var miniMap = L.map(mapEl, {
+        zoomControl: false,
+        scrollWheelZoom: false,
+        dragging: true
+      }).setView([34.0151, 71.5249], 14);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>'
+      }).addTo(miniMap);
+
+      L.marker([34.0151, 71.5249]).addTo(miniMap)
+        .bindPopup('<b>Ali Hassan</b><br>Check-in: 08:02 AM')
+        .openPopup();
+
+      // Draw a geofence circle (200m radius)
+      L.circle([34.0151, 71.5249], {
+        radius: 200,
+        color: '#2FBF8F',
+        fillColor: '#2FBF8F',
+        fillOpacity: 0.08,
+        weight: 1.5,
+        dashArray: '4 4'
+      }).addTo(miniMap);
+
+      mapEl._leaflet_map = miniMap;
+    });
+
+    // Clean up map when modal is hidden (prevents issues with multiple opens)
+    attendModal.addEventListener('hidden.bs.modal', function() {
+      var mapEl = document.getElementById('modalAttendanceMap');
+      if (mapEl && mapEl._leaflet_map) {
+        mapEl._leaflet_map.remove();
+        delete mapEl._leaflet_map;
+      }
+    });
+  }
+
+})();
+</script>
+{% endblock %}
