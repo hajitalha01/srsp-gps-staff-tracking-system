@@ -1,0 +1,220 @@
+/* ============================================================
+   PROFILE & SETTINGS — Custom Styles
+   Uses CSS variables from admin_dashboard.css
+   ============================================================ */
+
+/* ---------- page header ---------- */
+.pf-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.pf-page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--gray-900, #111827);
+  margin: 0 0 0.15rem 0;
+}
+.pf-page-subtitle {
+  font-size: 0.875rem;
+  color: var(--gray-500, #6B7280);
+  margin: 0;
+}
+
+/* ---------- main card ---------- */
+.pf-card {
+  background: #fff;
+  border: 1px solid var(--gray-200, #E5E7EB);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 1.75rem 1.75rem;
+}
+
+/* ---------- two-column layout ---------- */
+.pf-layout {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* ---------- section titles ---------- */
+.pf-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-900, #111827);
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- form ---------- */
+.pf-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--gray-700, #374151);
+  margin-bottom: 0.35rem;
+}
+.pf-input {
+  width: 100%;
+  border: 1.5px solid var(--gray-200, #E5E7EB);
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: #fff;
+  color: var(--gray-800, #1F2937);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.pf-input:focus {
+  outline: none;
+  border-color: #52B788;
+  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.15);
+}
+.pf-input::placeholder {
+  color: var(--gray-400, #9CA3AF);
+}
+
+/* ---------- divider ---------- */
+.pf-divider {
+  border: 0;
+  border-top: 1px solid var(--gray-200, #E5E7EB);
+  margin: 1.25rem 0;
+}
+
+/* ---------- actions ---------- */
+.pf-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ---------- buttons ---------- */
+.pf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1.5px solid transparent;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.pf-btn-primary {
+  background: #52B788;
+  border-color: #52B788;
+  color: #fff;
+}
+.pf-btn-primary:hover {
+  background: #3D9E6E;
+  border-color: #3D9E6E;
+  color: #fff;
+}
+.pf-btn-blue {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: #fff;
+}
+.pf-btn-blue:hover {
+  background: #2563EB;
+  border-color: #2563EB;
+  color: #fff;
+}
+.pf-btn-outline {
+  background: transparent;
+  border-color: var(--gray-300, #D1D5DB);
+  color: var(--gray-700, #374151);
+}
+.pf-btn-outline:hover {
+  background: var(--gray-50, #F9FAFB);
+  border-color: var(--gray-400, #9CA3AF);
+}
+
+/* ---------- photo column ---------- */
+.pf-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.25rem;
+}
+
+.pf-photo-wrap {
+  position: relative;
+}
+
+.pf-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: #E3F3EC;
+  color: #1F5C40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  border: 4px solid #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pf-camera-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pf-camera-overlay:hover {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.pf-photo-hint {
+  font-size: 0.72rem;
+  color: var(--gray-400, #9CA3AF);
+  margin: 0;
+  text-align: center;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 991.98px) {
+  .pf-layout {
+    grid-template-columns: 1fr;
+  }
+  .pf-photo-col {
+    order: -1;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gray-200, #E5E7EB);
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .pf-card {
+    padding: 1.25rem 1rem;
+  }
+  .pf-actions {
+    flex-direction: column;
+  }
+  .pf-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

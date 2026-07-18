@@ -98,13 +98,33 @@
         </a>
       </li>
 
-      <!-- Notifications & Settings -->
+      <!-- Notifications -->
       <li>
         <a href="{% url 'admin_notifications' %}"
            class="sidebar-link {% if active == 'notifications' %}active{% endif %}"
            aria-current="{% if active == 'notifications' %}page{% endif %}">
           <i class="fas fa-bell" aria-hidden="true"></i>
           <span>Notifications</span>
+        </a>
+      </li>
+
+      <!-- Profile -->
+      <li>
+        <a href="{% url 'admin_profile' %}"
+           class="sidebar-link {% if active == 'profile' %}active{% endif %}"
+           aria-current="{% if active == 'profile' %}page{% endif %}">
+          <i class="fas fa-user-circle" aria-hidden="true"></i>
+          <span>Profile</span>
+        </a>
+      </li>
+
+      <!-- Settings -->
+      <li>
+        <a href="{% url 'admin_settings' %}"
+           class="sidebar-link {% if active == 'settings' %}active{% endif %}"
+           aria-current="{% if active == 'settings' %}page{% endif %}">
+          <i class="fas fa-cog" aria-hidden="true"></i>
+          <span>Settings</span>
         </a>
       </li>
 

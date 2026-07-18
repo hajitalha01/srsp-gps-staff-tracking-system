@@ -1,867 +1,301 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
 {% load static %}
-{% block title %}Emergency Alerts — Admin{% endblock %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Alerts — Admin</title>
 
-{% block extra_css %}
-<style>
-  .filter-bar .form-control,
-  .filter-bar .form-select,
-  .filter-bar input[type="date"] {
-    min-width: 120px;
-  }
-  .filter-bar .search-wrapper {
-    flex: 1;
-    min-width: 140px;
-  }
-  .action-toolbar .btn {
-    white-space: nowrap;
-  }
-  .table tbody td {
-    font-size: 0.8125rem;
-    vertical-align: middle;
-  }
-  .table tbody td .fw-semibold {
-    font-size: 0.875rem;
-  }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  .emergency-banner {
-    border-radius: var(--radius-lg);
-    border-left: 4px solid var(--text-danger);
-  }
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  @media (max-width: 767.98px) {
-    .filter-bar {
-      flex-direction: column;
-    }
-    .filter-bar .form-control,
-    .filter-bar .form-select,
-    .filter-bar .search-wrapper,
-    .filter-bar input[type="date"] {
-      min-width: 100%;
-      width: 100% !important;
-    }
-  }
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-</style>
-{% endblock %}
+  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/emergency_alerts.css' %}">
+</head>
+<body>
 
-{% block content %}
-<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
-  {% include 'partials/admin_sidebar.html' with active='alerts' %}
+  <div class="dash-wrapper">
 
-  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+    <aside class="dash-sidebar" id="sidebar">
 
-    <!-- ===== Mobile Sidebar Toggle ===== -->
-    <div class="d-lg-none mb-3">
-      <button id="sidebarToggle"
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              aria-label="Toggle sidebar"
-              aria-expanded="false"
-              aria-controls="sidebar">
-        <i class="fas fa-bars me-1" aria-hidden="true"></i> Menu
-      </button>
-    </div>
-
-    <!-- ============================================================
-         1. PAGE HEADER
-         ============================================================ -->
-    <div class="page-header">
-      <div>
-        <h3>Emergency Alerts</h3>
-        <nav aria-label="Breadcrumb">
-          <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Emergency Alerts</li>
-          </ol>
-        </nav>
-        <p class="text-muted mt-1 mb-0" style="font-size:0.8125rem">
-          Monitor, track, and respond to emergency alerts sent by field staff across all education centers.
-        </p>
-      </div>
-    </div>
-
-    <!-- ============================================================
-         3. EMERGENCY STATUS BANNER
-         ============================================================ -->
-    <div class="alert alert-danger emergency-banner d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3"
-         role="alert" aria-live="polite">
-      <div class="d-flex align-items-center gap-3">
-        <span class="d-flex align-items-center justify-content-center rounded-circle"
-              style="width:40px;height:40px;background:rgba(192,57,43,0.15);font-size:1.125rem" aria-hidden="true">
-          <i class="fas fa-exclamation-triangle"></i>
-        </span>
-        <div>
-          <strong style="font-size:0.9375rem">Active Emergency Status</strong>
-          <br>
-          <small>Last alert: 10:15 AM &middot; {{ active_alerts|default:"4" }} active case(s) requiring attention</small>
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="bi bi-heart-pulse-fill"></i>
         </div>
+        <span class="brand-text">NGO System</span>
       </div>
-      <span class="badge rounded-pill" style="background:var(--fill-danger);color:#fff;font-size:0.8125rem;padding:0.375rem 0.875rem">
-        <i class="fas fa-circle fa-fw" style="font-size:0.5rem" aria-hidden="true"></i>
-        {{ active_alerts|default:"4" }} Active
-      </span>
-    </div>
 
-    <!-- ============================================================
-         2. EMERGENCY SUMMARY CARDS (6)
-         ============================================================ -->
-    <div class="stat-grid mb-3" role="region" aria-label="Emergency alert summary">
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-bell"></i></div>
-          <div>
-            <p class="stat-label">Total Alerts</p>
-            <h4 class="stat-value">{{ total_alerts|default:"47" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">All time</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-exclamation-circle"></i></div>
-          <div>
-            <p class="stat-label">Active</p>
-            <h4 class="stat-value" style="color:var(--text-danger)">{{ active_alerts|default:"4" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Requires attention</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-primary" aria-hidden="true"><i class="fas fa-check-circle"></i></div>
-          <div>
-            <p class="stat-label">Resolved</p>
-            <h4 class="stat-value" style="color:var(--text-success)">{{ resolved_alerts|default:"43" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Successfully handled</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-arrow-up"></i></div>
-          <div>
-            <p class="stat-label">High Priority</p>
-            <h4 class="stat-value" style="color:var(--text-danger)">{{ high_priority|default:"8" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Urgent response needed</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-warning" aria-hidden="true"><i class="fas fa-minus-circle"></i></div>
-          <div>
-            <p class="stat-label">Medium Priority</p>
-            <h4 class="stat-value" style="color:var(--text-warning)">{{ medium_priority|default:"15" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Standard response</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-info" aria-hidden="true"><i class="fas fa-info-circle"></i></div>
-          <div>
-            <p class="stat-label">Low Priority</p>
-            <h4 class="stat-value" style="color:var(--text-info)">{{ low_priority|default:"24" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Routine / informational</small>
-      </div>
-    </div>
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+          <li><a href="{% url 'admin_staff' %}" class="nav-link"><i class="bi bi-people"></i><span>Staff Management</span></a></li>
+          <li><a href="{% url 'admin_centers' %}" class="nav-link"><i class="bi bi-building"></i><span>Center Management</span></a></li>
+          <li><a href="{% url 'admin_attendance' %}" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance</span></a></li>
+          <li><a href="{% url 'admin_reports' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a></li>
+          <li><a href="{% url 'admin_alerts' %}" class="nav-link active"><i class="bi bi-exclamation-triangle"></i><span>Emergency Alerts</span></a></li>
+          <li><a href="{% url 'admin_notifications' %}" class="nav-link"><i class="bi bi-bell"></i><span>Notifications</span></a></li>
+          <li><a href="{% url 'admin_profile' %}" class="nav-link"><i class="bi bi-person-circle"></i><span>Profile</span></a></li>
+          <li><a href="{% url 'admin_settings' %}" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+        </ul>
+      </nav>
 
-    <!-- ============================================================
-         MAIN CONTENT ROW 1: FILTERS + TABLE (LEFT) | MAP (RIGHT)
-         ============================================================ -->
-    <div class="row g-3 mb-3">
+      <div class="sidebar-footer">
+        <a href="{% url 'login' %}" class="nav-link logout-link">
+          <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+        </a>
+      </div>
 
-      <!-- -------- Left: Filters + Table -------- -->
-      <div class="col-xl-8">
+    </aside>
 
-        <!-- ===== 4. SEARCH & FILTER SECTION ===== -->
-        <div class="filter-bar" role="search" aria-label="Filter emergency alerts">
-          <div class="search-wrapper">
-            <i class="fas fa-search search-icon" aria-hidden="true"></i>
-            <input type="text" class="form-control" placeholder="Search by staff name..." aria-label="Search by staff name">
-          </div>
-          <div class="search-wrapper">
-            <i class="fas fa-id-badge search-icon" aria-hidden="true"></i>
-            <input type="text" class="form-control" placeholder="Search by staff ID..." aria-label="Search by staff ID">
-          </div>
-          <select class="form-select" aria-label="Filter by center">
-            <option value="">All Centers</option>
-            <option>Center 1 — Gulshan</option>
-            <option>Center 2 — Liaquatabad</option>
-            <option>Center 3 — Korangi</option>
-            <option>Center 4 — North Nazimabad</option>
-            <option>Center 5 — Saddar</option>
-          </select>
-          <select class="form-select" aria-label="Filter by priority">
-            <option value="">All Priorities</option>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-          <select class="form-select" aria-label="Filter by status">
-            <option value="">All Status</option>
-            <option>Active</option>
-            <option>Resolved</option>
-          </select>
-          <input type="date" class="form-select" aria-label="Filter by date">
-          <button type="button" class="btn btn-primary" aria-label="Search alerts">
-            <i class="fas fa-search" aria-hidden="true"></i>
-            Search
+    <div class="dash-main">
+
+      <header class="dash-topbar">
+
+        <div class="topbar-left">
+          <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="bi bi-list"></i>
           </button>
-          <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn" aria-label="Reset filters">
-            <i class="fas fa-undo" aria-hidden="true"></i>
-            Reset
+          <div class="topbar-title">
+            <h4>Emergency Alerts</h4>
+            <p>View all emergency alerts</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+
+          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+            <i class="bi bi-bell-fill"></i>
+            <span class="badge-count">3</span>
           </button>
-        </div>
 
-        <!-- ===== 5. EMERGENCY ALERTS TABLE ===== -->
-        <div class="table-wrapper" role="region" aria-label="Emergency alerts list">
+          <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span class="badge-count" style="background:#EF4444;">2</span>
+          </a>
 
-          <!-- Empty State -->
-          <div class="empty-state d-none" id="emptyState">
-            <i class="fas fa-check-circle" style="color:var(--text-success);opacity:1" aria-hidden="true"></i>
-            <h5>No active emergencies</h5>
-            <p>There are no emergency alerts matching your criteria. All field staff are safe.</p>
-            <button type="button" class="btn btn-outline-secondary" id="resetFromEmptyBtn">
-              <i class="fas fa-undo" aria-hidden="true"></i>
-              Reset Filters
+          <div class="topbar-separator"></div>
+
+          <div class="date-picker">
+            <i class="bi bi-calendar3"></i>
+            <span id="currentDate"></span>
+          </div>
+
+          <div class="topbar-separator"></div>
+
+          <div class="dropdown">
+            <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <div class="profile-avatar">AD</div>
+              <div class="profile-info d-none d-md-block">
+                <span class="profile-name">Admin</span>
+                <span class="profile-role">Administrator</span>
+              </div>
             </button>
-          </div>
-
-          <div class="table-responsive">
-            <table class="table" aria-label="Emergency alert records">
-              <thead>
-                <tr>
-                  <th scope="col">Alert ID</th>
-                  <th scope="col">Staff Name</th>
-                  <th scope="col">Center</th>
-                  <th scope="col">Alert Time</th>
-                  <th scope="col">Priority</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Last Location</th>
-                  <th scope="col" class="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for alert in alert_list %}
-                <tr>
-                  <td><span class="staff-id-tag">{{ alert.code }}</span></td>
-                  <td><span class="fw-semibold">{{ alert.name }}</span></td>
-                  <td>{{ alert.center }}</td>
-                  <td>{{ alert.time }}</td>
-                  <td>
-                    <span class="status-badge {% if alert.priority == 'High' %}emergency{% elif alert.priority == 'Medium' %}late{% else %}active{% endif %}">
-                      {{ alert.priority }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="status-badge {% if alert.status == 'Active' %}emergency{% else %}active{% endif %}">
-                      <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
-                      {{ alert.status }}
-                    </span>
-                  </td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">{{ alert.location }}</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button"
-                            class="btn btn-icon btn-sm btn-outline-secondary"
-                            data-bs-toggle="modal"
-                            data-bs-target="#viewEmergencyModal"
-                            title="View details"
-                            aria-label="View {{ alert.name }} alert">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn"
-                            data-lat="{{ alert.lat|default:'0' }}" data-lng="{{ alert.lng|default:'0' }}"
-                            title="View on map" aria-label="View {{ alert.name }} on map">
-                      <i class="fas fa-map-marker-alt"></i>
-                    </button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Mark resolved" aria-label="Resolve {{ alert.name }} alert">
-                      <i class="fas fa-check"></i>
-                    </button>
-                  </td>
-                </tr>
-                {% empty %}
-                <!-- ===== Placeholder Demo Data ===== -->
-                <tr>
-                  <td><span class="staff-id-tag">EMR-001</span></td>
-                  <td><span class="fw-semibold">Ali Hassan</span></td>
-                  <td>Center 5 — Saddar</td>
-                  <td>10:15 AM</td>
-                  <td><span class="status-badge emergency">High</span></td>
-                  <td><span class="status-badge emergency"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">34.0151, 71.5249</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewEmergencyModal" title="View" aria-label="View Ali Hassan"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.015" data-lng="71.524" title="Map" aria-label="View on map"><i class="fas fa-map-marker-alt"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Resolve" aria-label="Resolve alert"><i class="fas fa-check"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><span class="staff-id-tag">EMR-002</span></td>
-                  <td><span class="fw-semibold">Sara Khan</span></td>
-                  <td>Center 2 — Liaquatabad</td>
-                  <td>04:30 PM</td>
-                  <td><span class="status-badge late">Medium</span></td>
-                  <td><span class="status-badge emergency"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">34.1200, 72.4700</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewEmergencyModal" title="View" aria-label="View Sara Khan"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.120" data-lng="72.470" title="Map" aria-label="View on map"><i class="fas fa-map-marker-alt"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Resolve" aria-label="Resolve alert"><i class="fas fa-check"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><span class="staff-id-tag">EMR-003</span></td>
-                  <td><span class="fw-semibold">Usman Tariq</span></td>
-                  <td>Center 1 — Gulshan</td>
-                  <td>09:20 AM</td>
-                  <td><span class="status-badge active">Low</span></td>
-                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Resolved</span></td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">34.1480, 71.7350</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewEmergencyModal" title="View" aria-label="View Usman Tariq"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.148" data-lng="71.735" title="Map" aria-label="View on map"><i class="fas fa-map-marker-alt"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Resolve" aria-label="Resolve alert"><i class="fas fa-check"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><span class="staff-id-tag">EMR-004</span></td>
-                  <td><span class="fw-semibold">Hina Yousaf</span></td>
-                  <td>Center 3 — Korangi</td>
-                  <td>11:00 AM</td>
-                  <td><span class="status-badge emergency">High</span></td>
-                  <td><span class="status-badge emergency"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">34.1980, 72.0400</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewEmergencyModal" title="View" aria-label="View Hina Yousaf"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.198" data-lng="72.040" title="Map" aria-label="View on map"><i class="fas fa-map-marker-alt"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Resolve" aria-label="Resolve alert"><i class="fas fa-check"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><span class="staff-id-tag">EMR-005</span></td>
-                  <td><span class="fw-semibold">Bilal Ahmed</span></td>
-                  <td>Center 4 — N. Nazimabad</td>
-                  <td>02:15 PM</td>
-                  <td><span class="status-badge late">Medium</span></td>
-                  <td><span class="status-badge emergency"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span></td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">34.1460, 73.2110</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewEmergencyModal" title="View" aria-label="View Bilal Ahmed"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="34.146" data-lng="73.211" title="Map" aria-label="View on map"><i class="fas fa-map-marker-alt"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Resolve" aria-label="Resolve alert"><i class="fas fa-check"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><span class="staff-id-tag">EMR-006</span></td>
-                  <td><span class="fw-semibold">Zainab Ali</span></td>
-                  <td>Center 5 — Saddar</td>
-                  <td>08:45 AM</td>
-                  <td><span class="status-badge emergency">High</span></td>
-                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Resolved</span></td>
-                  <td style="font-size:0.75rem;color:var(--text-secondary)">33.5890, 71.4490</td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewEmergencyModal" title="View" aria-label="View Zainab Ali"><i class="fas fa-eye"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-info map-focus-btn" data-lat="33.589" data-lng="71.449" title="Map" aria-label="View on map"><i class="fas fa-map-marker-alt"></i></button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-success" title="Resolve" aria-label="Resolve alert"><i class="fas fa-check"></i></button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Pagination -->
-          <div class="pagination-nav" role="navigation" aria-label="Alerts pagination">
-            <span class="pagination-info">
-              Showing <strong>1</strong> to <strong>6</strong> of <strong>{{ total_alerts|default:"47" }}</strong> alerts
-            </span>
-            <nav aria-label="Page navigation">
-              <ul class="pagination pagination-sm mb-0">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Previous"><i class="fas fa-chevron-left" aria-hidden="true"></i></a>
-                </li>
-                <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Page 2">2</a></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Page 3">3</a></li>
-                <li class="page-item disabled"><span class="page-link">...</span></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Page 8">8</a></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Next"><i class="fas fa-chevron-right" aria-hidden="true"></i></a></li>
-              </ul>
-            </nav>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
+              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_profile' %}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_notifications' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><a class="dropdown-item py-2 px-3 text-danger" href="{% url 'login' %}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
           </div>
 
         </div>
-        <!-- /.table-wrapper -->
 
-      </div>
-      <!-- /.col-xl-8 -->
+      </header>
 
-      <!-- -------- Right: Live Emergency Map -------- -->
-      <div class="col-xl-4">
+      <div class="dash-content">
 
-        <!-- ============================================================
-             7. LIVE EMERGENCY MAP
-             ============================================================ -->
-        <div class="card emergency-map-wrap" role="region" aria-label="Emergency locations map">
-          <div class="card-header d-flex align-items-center justify-content-between py-2">
-            <h5 class="mb-0" style="font-size:0.8125rem">
-              <i class="fas fa-map-marked-alt me-1" style="color:var(--text-danger)" aria-hidden="true"></i>
-              Live Emergency Map
-            </h5>
-            <small class="text-muted">
-              <span class="status-badge emergency" style="font-size:0.625rem"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> {{ active_alerts|default:"4" }} active</span>
-            </small>
+        <div class="ea-page-header">
+          <div>
+            <h3 class="ea-page-title">Emergency Alerts</h3>
+            <p class="ea-page-subtitle">View all emergency alerts</p>
           </div>
-          <div class="card-body">
-            <div id="emergencyMap" class="emergency-map"></div>
-            <!-- Map Legend Overlay -->
-            <div class="map-legend-custom" aria-label="Map legend">
-              <span class="legend-row"><span class="legend-dot" style="background:var(--fill-danger)" aria-hidden="true"></span> High Priority</span>
-              <span class="legend-row"><span class="legend-dot" style="background:var(--text-warning)" aria-hidden="true"></span> Medium Priority</span>
-              <span class="legend-row"><span class="legend-dot" style="background:var(--text-info)" aria-hidden="true"></span> Low Priority</span>
-              <span class="legend-row"><span class="legend-dot" style="background:#B0B8B4" aria-hidden="true"></span> Resolved</span>
+          <div class="ea-header-right">
+            <div class="ea-filter-wrap">
+              <i class="bi bi-funnel ea-filter-icon"></i>
+              <select class="ea-filter-select" id="statusFilter">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="received">Received</option>
+                <option value="unread">Unread</option>
+                <option value="resolved">Resolved</option>
+              </select>
             </div>
-          </div>
-          <div class="card-footer py-2 d-flex justify-content-between align-items-center">
-            <small class="text-muted"><i class="fas fa-info-circle me-1" aria-hidden="true"></i>Click marker for details</small>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="resetMapViewBtn" aria-label="Reset map view">
-              <i class="fas fa-crosshairs"></i>
-            </button>
           </div>
         </div>
 
-      </div>
-      <!-- /.col-xl-4 -->
+        <div class="ea-alerts-grid" id="alertsGrid">
 
-    </div>
-    <!-- /.row 1 -->
-
-    <!-- ============================================================
-         MAIN CONTENT ROW 2: TIMELINE (LEFT) | ACTIVITIES (RIGHT)
-         ============================================================ -->
-    <div class="row g-3 mb-3">
-
-      <!-- -------- Left: Emergency Timeline -------- -->
-      <div class="col-xl-6">
-
-        <!-- ============================================================
-             8. EMERGENCY TIMELINE
-             ============================================================ -->
-        <div class="card h-100" role="region" aria-label="Emergency response timeline">
-          <div class="card-header d-flex align-items-center gap-2 py-2">
-            <i class="fas fa-clock" style="color:var(--text-danger);font-size:1rem" aria-hidden="true"></i>
-            <h5 class="mb-0" style="font-size:0.875rem">Emergency Response Timeline</h5>
-          </div>
-          <div class="card-body py-3">
-            <div class="attend-timeline">
-              <div class="attend-timeline-item">
-                <span class="attend-timeline-dot dot-danger" aria-hidden="true"><i class="fas fa-exclamation fa-xs"></i></span>
-                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Alert Triggered</p>
-                <small class="text-muted" style="font-size:0.6875rem">10:15 AM &middot; Ali Hassan &middot; Medical Emergency</small>
-              </div>
-              <div class="attend-timeline-item">
-                <span class="attend-timeline-dot dot-warning" aria-hidden="true"><i class="fas fa-bell fa-xs"></i></span>
-                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Admin Notified</p>
-                <small class="text-muted" style="font-size:0.6875rem">10:16 AM &middot; Push notification + SMS sent</small>
-              </div>
-              <div class="attend-timeline-item">
-                <span class="attend-timeline-dot dot-info" aria-hidden="true"><i class="fas fa-map-pin fa-xs"></i></span>
-                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Location Updated</p>
-                <small class="text-muted" style="font-size:0.6875rem">10:17 AM &middot; GPS: 34.0151, 71.5249 &middot; Geofence verified</small>
-              </div>
-              <div class="attend-timeline-item">
-                <span class="attend-timeline-dot dot-info" aria-hidden="true"><i class="fas fa-paper-plane fa-xs"></i></span>
-                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Response Sent</p>
-                <small class="text-muted" style="font-size:0.6875rem">10:20 AM &middot; Support team dispatched to location</small>
-              </div>
-              <div class="attend-timeline-item">
-                <span class="attend-timeline-dot dot-success" aria-hidden="true"><i class="fas fa-check fa-xs"></i></span>
-                <p class="mb-0" style="font-size:0.8125rem;font-weight:500">Alert Resolved</p>
-                <small class="text-muted" style="font-size:0.6875rem">11:45 AM &middot; Staff confirmed safe &middot; Case closed</small>
+          <div class="ea-card" data-status="active">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#FEE2E2;color:#DC2626;">AH</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Ali Hassan</h5>
+                <span class="ea-center">Center 5, Peshawar</span>
+                <span class="ea-badge ea-badge-active">Active</span>
               </div>
             </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-heart-pulse"></i> Medical Emergency</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 5, Peshawar</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 18, 2026 &middot; 10:15 AM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
           </div>
+
+          <div class="ea-card" data-status="received">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#DCFCE7;color:#16A34A;">SK</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Sara Khan</h5>
+                <span class="ea-center">Center 2, Swabi</span>
+                <span class="ea-badge ea-badge-received">Received</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-shield-exclamation"></i> Security Issue</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 2, Swabi</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 18, 2026 &middot; 09:30 AM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
+          <div class="ea-card" data-status="unread">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#FEF3C7;color:#D97706;">UT</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Usman Tariq</h5>
+                <span class="ea-center">Center 1, Mardan</span>
+                <span class="ea-badge ea-badge-unread">Unread</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-truck"></i> Transport Issue</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 1, Mardan</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 18, 2026 &middot; 08:45 AM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
+          <div class="ea-card" data-status="active">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#FEE2E2;color:#DC2626;">HY</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Hina Yousaf</h5>
+                <span class="ea-center">Center 3, Kohat</span>
+                <span class="ea-badge ea-badge-active">Active</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-fire"></i> Fire Emergency</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 3, Kohat</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 17, 2026 &middot; 04:20 PM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
+          <div class="ea-card" data-status="unread">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#FEF3C7;color:#D97706;">BA</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Bilal Ahmed</h5>
+                <span class="ea-center">Center 4, Nowshera</span>
+                <span class="ea-badge ea-badge-unread">Unread</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-car-front"></i> Accident</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 4, Nowshera</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 17, 2026 &middot; 02:10 PM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
+          <div class="ea-card" data-status="received">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#DCFCE7;color:#16A34A;">ZA</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Zainab Ali</h5>
+                <span class="ea-center">Center 5, Peshawar</span>
+                <span class="ea-badge ea-badge-received">Received</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-heart-pulse"></i> Medical Emergency</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 5, Peshawar</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 16, 2026 &middot; 11:00 AM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
+          <div class="ea-card" data-status="resolved">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#DBEAFE;color:#2563EB;">FM</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Fatima Mahmood</h5>
+                <span class="ea-center">Center 2, Swabi</span>
+                <span class="ea-badge ea-badge-resolved">Resolved</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-activity"></i> Health Issue</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 2, Swabi</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 15, 2026 &middot; 03:30 PM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
+          <div class="ea-card" data-status="resolved">
+            <div class="ea-card-left">
+              <div class="ea-avatar" style="background:#DBEAFE;color:#2563EB;">OK</div>
+              <div class="ea-meta">
+                <h5 class="ea-name">Omar Khalid</h5>
+                <span class="ea-center">Center 1, Mardan</span>
+                <span class="ea-badge ea-badge-resolved">Resolved</span>
+              </div>
+            </div>
+            <div class="ea-card-center">
+              <span class="ea-sos-type"><i class="bi bi-shield-exclamation"></i> Security Issue</span>
+              <span class="ea-location"><i class="bi bi-geo-alt"></i> Near Center 1, Mardan</span>
+              <span class="ea-time"><i class="bi bi-clock"></i> Jul 14, 2026 &middot; 01:15 PM</span>
+            </div>
+            <div class="ea-card-right">
+              <button class="ea-btn-map" type="button"><i class="bi bi-map"></i> View on Map</button>
+            </div>
+          </div>
+
         </div>
 
       </div>
 
-      <!-- -------- Right: Recent Emergency Activities -------- -->
-      <div class="col-xl-6">
-
-        <!-- ============================================================
-             9. RECENT EMERGENCY ACTIVITIES
-             ============================================================ -->
-        <div class="card h-100" role="region" aria-label="Recent emergency activities">
-          <div class="card-header d-flex align-items-center gap-2 py-2">
-            <i class="fas fa-bolt" style="color:var(--text-danger);font-size:1rem" aria-hidden="true"></i>
-            <h5 class="mb-0" style="font-size:0.875rem">Recent Activities</h5>
-          </div>
-          <div class="card-body py-3">
-            <div class="activity-item">
-              <span class="act-icon" style="background:var(--bg-danger);color:var(--text-danger)" aria-hidden="true"><i class="fas fa-bell fa-xs"></i></span>
-              <div class="act-text">
-                <p>SOS triggered by <strong>Ali Hassan</strong> &middot; Medical emergency</p>
-                <small>10:15 AM &middot; Center 5, Saddar</small>
-              </div>
-            </div>
-            <div class="activity-item">
-              <span class="act-icon" style="background:var(--bg-success);color:var(--text-success)" aria-hidden="true"><i class="fas fa-check fa-xs"></i></span>
-              <div class="act-text">
-                <p>Alert resolved for <strong>Zainab Ali</strong> &middot; Medical emergency</p>
-                <small>09:30 AM &middot; Center 5, Saddar</small>
-              </div>
-            </div>
-            <div class="activity-item">
-              <span class="act-icon" style="background:var(--bg-warning);color:var(--text-warning)" aria-hidden="true"><i class="fas fa-phone fa-xs"></i></span>
-              <div class="act-text">
-                <p>Staff contacted: <strong>Bilal Ahmed</strong> &middot; Flooding situation</p>
-                <small>09:00 AM &middot; Center 4, N. Nazimabad</small>
-              </div>
-            </div>
-            <div class="activity-item">
-              <span class="act-icon" style="background:var(--bg-info);color:var(--text-info)" aria-hidden="true"><i class="fas fa-map-pin fa-xs"></i></span>
-              <div class="act-text">
-                <p>Location updated for <strong>Sara Khan</strong> &middot; Security issue</p>
-                <small>08:50 AM &middot; Center 2, Liaquatabad</small>
-              </div>
-            </div>
-            <div class="activity-item">
-              <span class="act-icon" style="background:var(--bg-danger);color:var(--text-danger)" aria-hidden="true"><i class="fas fa-exclamation fa-xs"></i></span>
-              <div class="act-text">
-                <p>SOS triggered by <strong>Hina Yousaf</strong> &middot; Fire reported</p>
-                <small>08:30 AM &middot; Center 3, Korangi</small>
-              </div>
-            </div>
-            <div class="activity-item">
-              <span class="act-icon" style="background:var(--bg-warning);color:var(--text-warning)" aria-hidden="true"><i class="fas fa-check-double fa-xs"></i></span>
-              <div class="act-text">
-                <p>Alert resolved for <strong>Usman Tariq</strong> &middot; Transport issue</p>
-                <small>07:45 AM &middot; Center 1, Gulshan</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-    <!-- /.row 2 -->
-
-    <!-- ============================================================
-         10. QUICK ACTION PANEL
-         ============================================================ -->
-    <div role="region" aria-label="Emergency quick actions">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="fas fa-bolt" style="color:var(--text-danger);font-size:1rem" aria-hidden="true"></i>
-        <h5 class="mb-0" style="font-size:0.9375rem">Quick Actions</h5>
-      </div>
-      <div class="row g-2">
-        <div class="col">
-          <a href="#" class="dash-action-card" role="button" aria-label="Contact staff">
-            <span class="action-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-phone-alt"></i></span>
-            <div class="action-text">
-              <h6>Contact Staff</h6>
-              <p>Call or message field staff</p>
-            </div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="#" class="dash-action-card" role="button" aria-label="View live location">
-            <span class="action-icon icon-bg-info" aria-hidden="true"><i class="fas fa-satellite-dish"></i></span>
-            <div class="action-text">
-              <h6>Live Location</h6>
-              <p>Track live GPS position</p>
-            </div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="#" class="dash-action-card" role="button" aria-label="Notify management">
-            <span class="action-icon icon-bg-warning" aria-hidden="true"><i class="fas fa-bullhorn"></i></span>
-            <div class="action-text">
-              <h6>Notify Management</h6>
-              <p>Send alert to supervisors</p>
-            </div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="#" class="dash-action-card" role="button" aria-label="Export emergency report">
-            <span class="action-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-file-export"></i></span>
-            <div class="action-text">
-              <h6>Export Report</h6>
-              <p>Download emergency log</p>
-            </div>
-          </a>
-        </div>
-        <div class="col">
-          <a href="#" class="dash-action-card" role="button" aria-label="Print alert details">
-            <span class="action-icon icon-bg-primary" aria-hidden="true"><i class="fas fa-print"></i></span>
-            <div class="action-text">
-              <h6>Print Details</h6>
-              <p>Print alert summary</p>
-            </div>
-          </a>
-        </div>
-      </div>
     </div>
 
   </div>
-  <!-- /.flex-1 -->
-</div>
-<!-- /.flex wrapper -->
 
-<!-- ============================================================
-     6. EMERGENCY DETAILS MODAL
-     ============================================================ -->
-<div class="modal fade" id="viewEmergencyModal" tabindex="-1" aria-labelledby="viewEmergencyModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header" style="background:var(--bg-danger);color:var(--text-danger)">
-        <h5 class="modal-title" id="viewEmergencyModalLabel">
-          <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
-          Emergency Alert Details
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <!-- Staff header -->
-        <div class="d-flex align-items-center gap-3 mb-4">
-          <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-               style="width:56px;height:56px;background:var(--bg-danger);color:var(--text-danger);font-size:1.25rem;font-weight:600" aria-hidden="true">
-            AH
-          </div>
-          <div>
-            <h5 class="mb-1" id="modalEmrName">Ali Hassan</h5>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <span class="staff-id-tag" id="modalEmrId">EMR-001</span>
-              <span class="text-muted" style="font-size:0.8125rem" id="modalEmrCenter">Center 5 — Saddar</span>
-              <span class="status-badge emergency" id="modalEmrStatus"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Active</span>
-            </div>
-          </div>
-        </div>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <div class="row g-3">
-          <div class="col-md-6">
-            <h6 class="text-muted mb-2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em">
-              <i class="fas fa-info-circle me-1" aria-hidden="true"></i> Alert Information
-            </h6>
-            <div class="mb-2">
-              <div class="detail-label">Alert Time</div>
-              <div class="detail-value" id="modalEmrTime">10:15 AM &middot; July 18, 2026</div>
-            </div>
-            <div class="mb-2">
-              <div class="detail-label">Priority</div>
-              <div class="detail-value"><span class="status-badge emergency" id="modalEmrPriority">High</span></div>
-            </div>
-            <div class="mb-2">
-              <div class="detail-label">Phone Number</div>
-              <div class="detail-value" id="modalEmrPhone">0300-1234567</div>
-            </div>
-            <div>
-              <div class="detail-label">Emergency Description</div>
-              <div class="detail-value" id="modalEmrDesc" style="font-weight:400;font-size:0.8125rem">
-                Staff member reported a medical emergency. Complaining of severe chest pain and shortness of breath. Immediate medical assistance required.
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <h6 class="text-muted mb-2" style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.03em">
-              <i class="fas fa-map-marked-alt me-1" aria-hidden="true"></i> Location &amp; Status
-            </h6>
-            <div class="mb-2">
-              <div class="detail-label">Assigned Center</div>
-              <div class="detail-value" id="modalEmrAssignedCenter">Center 5 — Saddar</div>
-            </div>
-            <div class="mb-2">
-              <div class="detail-label">GPS Coordinates</div>
-              <div class="detail-value" id="modalEmrCoords" style="font-size:0.8125rem">34.0151, 71.5249</div>
-            </div>
-            <div class="mb-2">
-              <div class="detail-label">Current Status</div>
-              <div class="detail-value"><span class="status-badge emergency" id="modalEmrCurStatus">Active &middot; Awaiting response</span></div>
-            </div>
-            <div>
-              <div class="detail-label">Geofence Verification</div>
-              <div class="detail-value"><span class="status-badge active"><i class="fas fa-check-circle" aria-hidden="true"></i> Within geofence range</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-times" aria-hidden="true"></i>
-          Close
-        </button>
-        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
-          <i class="fas fa-check" aria-hidden="true"></i>
-          Resolve Alert
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-(function() {
-  'use strict';
-
-  /* ============================================================
-     Leaflet Emergency Map
-     ============================================================ */
-  var mapEl = document.getElementById('emergencyMap');
-  var map = null;
-  var markers = [];
-
-  if (mapEl && typeof L !== 'undefined') {
-    map = L.map('emergencyMap', {
-      center: [34.0, 71.8],
-      zoom: 8,
-      zoomControl: true,
-      scrollWheelZoom: true
-    });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; <a href="https://openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
-    }).addTo(map);
-
-    // Emergency alert markers data
-    var alertData = [
-      { id: 'EMR-001', name: 'Ali Hassan', desc: 'Medical Emergency', lat: 34.015, lng: 71.524, priority: 'High', status: 'Active' },
-      { id: 'EMR-002', name: 'Sara Khan', desc: 'Security Issue', lat: 34.120, lng: 72.470, priority: 'Medium', status: 'Active' },
-      { id: 'EMR-003', name: 'Usman Tariq', desc: 'Transport Issue', lat: 34.148, lng: 71.735, priority: 'Low', status: 'Resolved' },
-      { id: 'EMR-004', name: 'Hina Yousaf', desc: 'Fire Reported', lat: 34.198, lng: 72.040, priority: 'High', status: 'Active' },
-      { id: 'EMR-005', name: 'Bilal Ahmed', desc: 'Flooding', lat: 34.146, lng: 73.211, priority: 'Medium', status: 'Active' },
-      { id: 'EMR-006', name: 'Zainab Ali', desc: 'Medical Emergency', lat: 33.589, lng: 71.449, priority: 'High', status: 'Resolved' }
-    ];
-
-    // Color mapping for priority
-    var priorityColor = {
-      'High': 'var(--fill-danger)',
-      'Medium': 'var(--text-warning)',
-      'Low': 'var(--text-info)'
-    };
-    var resolvedColor = '#B0B8B4';
-
-    alertData.forEach(function(a) {
-      var isActive = a.status === 'Active';
-      var bg = isActive ? (priorityColor[a.priority] || resolvedColor) : resolvedColor;
-      var icon = L.divIcon({
-        className: 'emr-marker ' + (isActive ? a.priority.toLowerCase() : 'resolved'),
-        html: isActive ? '<i class="fas fa-exclamation" style="font-size:0.625rem"></i>' : '<i class="fas fa-check" style="font-size:0.625rem"></i>',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -17]
-      });
-
-      var marker = L.marker([a.lat, a.lng], { icon: icon, title: a.name }).addTo(map);
-
-      var priorityClass = isActive ? (a.priority === 'High' ? 'emergency' : a.priority === 'Medium' ? 'late' : 'active') : 'active';
-      marker.bindPopup(
-        '<div style="min-width:170px;font-family:Inter,system-ui,sans-serif">' +
-          '<div style="font-size:1rem;font-weight:600;margin-bottom:2px">' + a.name + '</div>' +
-          '<div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:6px">' + a.desc + '</div>' +
-          '<div style="display:flex;align-items:center;gap:6px;font-size:0.75rem;margin-bottom:4px">' +
-            '<span class="status-badge ' + priorityClass + '" style="font-size:0.675rem">' + a.priority + '</span>' +
-            '<span class="status-badge ' + (isActive ? 'emergency' : 'active') + '" style="font-size:0.675rem">' + a.status + '</span>' +
-          '</div>' +
-          '<div style="font-size:0.6875rem;color:var(--text-muted)">' + a.id + ' &middot; ' + a.lat + ', ' + a.lng + '</div>' +
-        '</div>',
-        { closeButton: true, maxWidth: 240 }
-      );
-
-      markers.push(marker);
-    });
-
-    // Fit bounds
-    var group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds().pad(0.15));
-
-    // Map focus from table buttons
-    document.querySelectorAll('.map-focus-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var lat = parseFloat(this.getAttribute('data-lat'));
-        var lng = parseFloat(this.getAttribute('data-lng'));
-        if (!isNaN(lat) && !isNaN(lng) && map) {
-          map.setView([lat, lng], 14, { animate: true });
-          markers.forEach(function(m) {
-            var pos = m.getLatLng();
-            if (Math.abs(pos.lat - lat) < 0.01 && Math.abs(pos.lng - lng) < 0.01) {
-              m.openPopup();
-            }
-          });
-        }
-      });
-    });
-
-    // Reset map view
-    var resetMapBtn = document.getElementById('resetMapViewBtn');
-    if (resetMapBtn) {
-      resetMapBtn.addEventListener('click', function() {
-        map.closePopup();
-        map.fitBounds(group.getBounds().pad(0.15), { animate: true });
-      });
-    }
-  }
-
-  /* ============================================================
-     Reset Filters
-     ============================================================ */
-  var resetBtn = document.getElementById('resetFiltersBtn');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', function() {
-      document.querySelectorAll('.filter-bar .form-control, .filter-bar .form-select, .filter-bar input[type="date"]').forEach(function(el) {
-        el.value = '';
-      });
-      window.showToast('Filters have been reset', 'info');
-    });
-  }
-
-  /* ============================================================
-     Search Button (simulation)
-     ============================================================ */
-  var searchBtn = document.querySelector('.filter-bar .btn-primary');
-  if (searchBtn) {
-    searchBtn.addEventListener('click', function() {
-      window.showToast('Search completed', 'info');
-    });
-  }
-
-  /* ============================================================
-     Quick Action Cards
-     ============================================================ */
-  document.querySelectorAll('.dash-action-card').forEach(function(card) {
-    card.addEventListener('click', function(e) {
-      e.preventDefault();
-      var label = this.querySelector('.action-text h6')?.textContent || 'Action';
-      window.showToast(label + ' action triggered', 'info');
-    });
-  });
-
-  /* ============================================================
-     Resolve Alert Buttons (table + modal)
-     ============================================================ */
-  document.querySelectorAll('.btn-outline-success[title="Resolve"], .btn-success[data-bs-dismiss="modal"]').forEach(function(btn) {
-    if (btn.closest('.modal-footer')) return; // only handle the table ones here
-    btn.addEventListener('click', function() {
-      window.showToast('Alert marked as resolved', 'success');
-    });
-  });
-
-  // Modal resolve button
-  var modalResolveBtn = document.querySelector('.modal-footer .btn-success');
-  if (modalResolveBtn) {
-    modalResolveBtn.addEventListener('click', function() {
-      window.showToast('Emergency alert resolved successfully', 'success');
-    });
-  }
-
-})();
-</script>
-{% endblock %}
+  <script src="{% static 'js/admin_dashboard.js' %}"></script>
+  <script src="{% static 'js/emergency_alerts.js' %}"></script>
+</body>
+</html>

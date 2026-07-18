@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile & Settings — Admin</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/profile_settings.css' %}">
+</head>
+<body>
+
+  <div class="dash-wrapper">
+
+    <aside class="dash-sidebar" id="sidebar">
+
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="bi bi-heart-pulse-fill"></i>
+        </div>
+        <span class="brand-text">NGO System</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+          <li><a href="{% url 'admin_staff' %}" class="nav-link"><i class="bi bi-people"></i><span>Staff Management</span></a></li>
+          <li><a href="{% url 'admin_centers' %}" class="nav-link"><i class="bi bi-building"></i><span>Center Management</span></a></li>
+          <li><a href="{% url 'admin_attendance' %}" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance</span></a></li>
+          <li><a href="{% url 'admin_reports' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a></li>
+          <li><a href="{% url 'admin_alerts' %}" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span>Emergency Alerts</span></a></li>
+          <li><a href="{% url 'admin_notifications' %}" class="nav-link"><i class="bi bi-bell"></i><span>Notifications</span></a></li>
+          <li><a href="{% url 'admin_profile' %}" class="nav-link active"><i class="bi bi-person-circle"></i><span>Profile</span></a></li>
+          <li><a href="{% url 'admin_settings' %}" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="{% url 'login' %}" class="nav-link logout-link">
+          <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+        </a>
+      </div>
+
+    </aside>
+
+    <div class="dash-main">
+
+      <header class="dash-topbar">
+
+        <div class="topbar-left">
+          <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="topbar-title">
+            <h4>Profile &amp; Settings</h4>
+            <p>Manage your account settings</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+
+          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+            <i class="bi bi-bell-fill"></i>
+            <span class="badge-count">3</span>
+          </button>
+
+          <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span class="badge-count" style="background:#EF4444;">2</span>
+          </a>
+
+          <div class="topbar-separator"></div>
+
+          <div class="date-picker">
+            <i class="bi bi-calendar3"></i>
+            <span id="currentDate"></span>
+          </div>
+
+          <div class="topbar-separator"></div>
+
+          <div class="dropdown">
+            <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <div class="profile-avatar">AD</div>
+              <div class="profile-info d-none d-md-block">
+                <span class="profile-name">Admin</span>
+                <span class="profile-role">Administrator</span>
+              </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
+              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_profile' %}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_notifications' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><a class="dropdown-item py-2 px-3 text-danger" href="{% url 'login' %}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
+          </div>
+
+        </div>
+
+      </header>
+
+      <div class="dash-content">
+
+        <div class="pf-page-header">
+          <div>
+            <h3 class="pf-page-title">Account Settings</h3>
+            <p class="pf-page-subtitle">Manage your profile and security settings</p>
+          </div>
+        </div>
+
+        <div class="pf-card">
+
+          <div class="pf-layout">
+
+            <div class="pf-form-col">
+
+              <h5 class="pf-section-title"><i class="bi bi-person me-2" style="color:#52B788"></i>Personal Information</h5>
+
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="pf-label">Full Name</label>
+                  <input type="text" class="pf-input" value="Aisha Khan" placeholder="Enter full name">
+                </div>
+                <div class="col-md-6">
+                  <label class="pf-label">Phone Number</label>
+                  <input type="text" class="pf-input" value="+92 300 1234567" placeholder="Enter phone number">
+                </div>
+                <div class="col-md-6">
+                  <label class="pf-label">Email Address</label>
+                  <input type="email" class="pf-input" value="aisha@srsp.org.pk" placeholder="Enter email address">
+                </div>
+                <div class="col-md-6">
+                  <label class="pf-label">Assigned Learning Center</label>
+                  <input type="text" class="pf-input" value="Gulshan Colony Center" placeholder="Enter center name">
+                </div>
+                <div class="col-md-6">
+                  <label class="pf-label">Role</label>
+                  <input type="text" class="pf-input" value="Admin" placeholder="Enter role" readonly style="background:var(--gray-50,#F9FAFB);color:var(--gray-500,#6B7280);cursor:not-allowed;">
+                </div>
+                <div class="col-md-6">
+                  <label class="pf-label">Username</label>
+                  <input type="text" class="pf-input" value="aisha_khan" placeholder="Enter username">
+                </div>
+              </div>
+
+              <hr class="pf-divider">
+
+              <h5 class="pf-section-title"><i class="bi bi-lock me-2" style="color:#3B82F6"></i>Change Password</h5>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <label class="pf-label">Current Password</label>
+                  <input type="password" class="pf-input" placeholder="Enter current password">
+                </div>
+                <div class="col-md-4">
+                  <label class="pf-label">New Password</label>
+                  <input type="password" class="pf-input" placeholder="Enter new password">
+                </div>
+                <div class="col-md-4">
+                  <label class="pf-label">Confirm Password</label>
+                  <input type="password" class="pf-input" placeholder="Confirm new password">
+                </div>
+              </div>
+
+              <div class="pf-actions">
+                <button class="pf-btn pf-btn-primary" type="button"><i class="bi bi-check-lg"></i> Update Profile</button>
+                <button class="pf-btn pf-btn-blue" type="button"><i class="bi bi-lock"></i> Update Password</button>
+              </div>
+
+            </div>
+
+            <div class="pf-photo-col">
+
+              <div class="pf-photo-wrap">
+                <div class="pf-avatar">
+                  <span>AK</span>
+                  <div class="pf-camera-overlay">
+                    <i class="bi bi-camera-fill"></i>
+                  </div>
+                </div>
+              </div>
+
+              <button class="pf-btn pf-btn-outline" type="button"><i class="bi bi-image"></i> Change Photo</button>
+
+              <p class="pf-photo-hint">Allowed JPG, PNG. Max 2MB.</p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="{% static 'js/admin_dashboard.js' %}"></script>
+  <script src="{% static 'js/profile_settings.js' %}"></script>
+</body>
+</html>

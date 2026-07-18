@@ -9,4 +9,6 @@ urlpatterns = [
     path('reports/', views.reports, name='admin_reports'),
     path('alerts/', views.emergency_alerts, name='admin_alerts'),
     path('notifications/', views.notifications_settings, name='admin_notifications'),
+    path('profile/', views.profile_settings, name='admin_profile'),
+    path('settings/', views.profile_settings, name='admin_settings'),
 ]

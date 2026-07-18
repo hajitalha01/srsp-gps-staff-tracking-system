@@ -1,899 +1,582 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
 {% load static %}
-{% block title %}Reports — Admin{% endblock %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Analytics — Admin</title>
 
-{% block extra_css %}
-<style>
-  .filter-bar .form-control,
-  .filter-bar .form-select,
-  .filter-bar input[type="date"] {
-    min-width: 130px;
-  }
-  .filter-bar .search-wrapper {
-    flex: 1;
-    min-width: 150px;
-  }
-  .action-toolbar .btn {
-    white-space: nowrap;
-  }
-  .table tbody td {
-    font-size: 0.8125rem;
-    vertical-align: middle;
-  }
-  .table tbody td .fw-semibold {
-    font-size: 0.875rem;
-  }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  @media (max-width: 767.98px) {
-    .filter-bar {
-      flex-direction: column;
-    }
-    .filter-bar .form-control,
-    .filter-bar .form-select,
-    .filter-bar .search-wrapper,
-    .filter-bar input[type="date"] {
-      min-width: 100%;
-      width: 100% !important;
-    }
-    .chart-card .card-body {
-      height: 180px;
-    }
-  }
-</style>
-{% endblock %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-{% block content %}
-<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
-  {% include 'partials/admin_sidebar.html' with active='reports' %}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
+  <link rel="stylesheet" href="{% static 'css/reports.css' %}">
+</head>
+<body>
 
-    <!-- ===== Mobile Sidebar Toggle ===== -->
-    <div class="d-lg-none mb-3">
-      <button id="sidebarToggle"
-              class="btn btn-sm btn-outline-secondary"
-              type="button"
-              aria-label="Toggle sidebar navigation"
-              aria-expanded="false"
-              aria-controls="sidebar">
-        <i class="fas fa-bars me-1" aria-hidden="true"></i> Menu
-      </button>
-    </div>
+  <div class="dash-wrapper">
 
-    <!-- ============================================================
-         1. PAGE HEADER
-         ============================================================ -->
-    <div class="page-header">
-      <div>
-        <h3>Reports</h3>
-        <nav aria-label="Breadcrumb">
-          <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Reports</li>
-          </ol>
-        </nav>
-        <p class="text-muted mt-1 mb-0" style="font-size:0.8125rem">
-          Generate, view, and export attendance reports. Analyse trends across centers, staff, and time periods.
-        </p>
-      </div>
-    </div>
+    <aside class="dash-sidebar" id="sidebar">
 
-    <!-- ============================================================
-         2. REPORT SUMMARY CARDS (6)
-         ============================================================ -->
-    <div class="stat-grid mb-3" role="region" aria-label="Report summary statistics">
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-clipboard-list"></i></div>
-          <div>
-            <p class="stat-label">Total Records</p>
-            <h4 class="stat-value">{{ total_records|default:"1,248" }}</h4>
-          </div>
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i class="bi bi-heart-pulse-fill"></i>
         </div>
-        <small class="text-muted">All attendance entries</small>
+        <span class="brand-text">NGO System</span>
       </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-primary" aria-hidden="true"><i class="fas fa-percentage"></i></div>
-          <div>
-            <p class="stat-label">Present %</p>
-            <h4 class="stat-value">{{ present_pct|default:"87" }}%</h4>
-          </div>
-        </div>
-        <small class="text-muted">Overall attendance rate</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-info" aria-hidden="true"><i class="fas fa-clock"></i></div>
-          <div>
-            <p class="stat-label">Avg. Working Hours</p>
-            <h4 class="stat-value">{{ avg_hours|default:"7.6" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Per staff per day</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-users"></i></div>
-          <div>
-            <p class="stat-label">Total Staff</p>
-            <h4 class="stat-value">{{ total_staff|default:"24" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Registered members</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-warning" aria-hidden="true"><i class="fas fa-building"></i></div>
-          <div>
-            <p class="stat-label">Total Centers</p>
-            <h4 class="stat-value">{{ total_centers|default:"6" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">Across KPK districts</small>
-      </div>
-      <div class="stat-card">
-        <div class="d-flex align-items-center gap-3 mb-1">
-          <div class="stat-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-exclamation-triangle"></i></div>
-          <div>
-            <p class="stat-label">Emergency Incidents</p>
-            <h4 class="stat-value">{{ emergency_count|default:"12" }}</h4>
-          </div>
-        </div>
-        <small class="text-muted">This quarter</small>
-      </div>
-    </div>
 
-    <!-- ============================================================
-         3. REPORT FILTERS
-         ============================================================ -->
-    <div class="filter-bar" role="search" aria-label="Report generation filters">
-      <input type="date" class="form-select" aria-label="Start date">
-      <input type="date" class="form-select" aria-label="End date">
-      <select class="form-select" aria-label="Select staff member">
-        <option value="">All Staff</option>
-        {% for s in staff_list %}<option>{{ s.name }}</option>{% empty %}
-        <option>Ali Hassan</option>
-        <option>Sara Khan</option>
-        <option>Muhammad Riaz</option>
-        {% endfor %}
-      </select>
-      <select class="form-select" aria-label="Select center">
-        <option value="">All Centers</option>
-        <option>Center 1 — Gulshan</option>
-        <option>Center 2 — Liaquatabad</option>
-        <option>Center 3 — Korangi</option>
-        <option>Center 4 — North Nazimabad</option>
-        <option>Center 5 — Saddar</option>
-      </select>
-      <select class="form-select" aria-label="Filter by attendance status">
-        <option value="">All Status</option>
-        <option>Present</option>
-        <option>Absent</option>
-        <option>Late</option>
-      </select>
-      <select class="form-select" aria-label="Report type">
-        <option value="">Report Type</option>
-        <option>Daily</option>
-        <option>Weekly</option>
-        <option>Monthly</option>
-        <option>Custom Range</option>
-      </select>
-      <button type="button" class="btn btn-primary" id="generateReportBtn" aria-label="Generate report">
-        <i class="fas fa-file-alt" aria-hidden="true"></i>
-        Generate Report
-      </button>
-      <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn" aria-label="Reset filters">
-        <i class="fas fa-undo" aria-hidden="true"></i>
-        Reset
-      </button>
-    </div>
+      <nav class="sidebar-nav">
+        <ul class="nav-list">
+          <li><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
+          <li><a href="{% url 'admin_staff' %}" class="nav-link"><i class="bi bi-people"></i><span>Staff Management</span></a></li>
+          <li><a href="{% url 'admin_centers' %}" class="nav-link"><i class="bi bi-building"></i><span>Center Management</span></a></li>
+          <li><a href="{% url 'admin_attendance' %}" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance</span></a></li>
+          <li><a href="{% url 'admin_reports' %}" class="nav-link active"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a></li>
+          <li><a href="{% url 'admin_alerts' %}" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span>Emergency Alerts</span></a></li>
+          <li><a href="{% url 'admin_notifications' %}" class="nav-link"><i class="bi bi-bell"></i><span>Notifications</span></a></li>
+          <li><a href="{% url 'admin_profile' %}" class="nav-link"><i class="bi bi-person-circle"></i><span>Profile</span></a></li>
+          <li><a href="{% url 'admin_settings' %}" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
+        </ul>
+      </nav>
 
-    <!-- ============================================================
-         4. REPORT CHARTS
-         ============================================================ -->
-    <div role="region" aria-label="Attendance charts" class="mb-3">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="fas fa-chart-line" style="color:var(--srsp-accent);font-size:1rem" aria-hidden="true"></i>
-        <h5 class="mb-0" style="font-size:0.9375rem">Analytics</h5>
+      <div class="sidebar-footer">
+        <a href="{% url 'login' %}" class="nav-link logout-link">
+          <i class="bi bi-box-arrow-right"></i><span>Logout</span>
+        </a>
       </div>
-      <div class="row g-3">
-        <!-- Daily Attendance Trend -->
-        <div class="col-md-4">
-          <div class="card chart-card">
-            <div class="card-header py-2">
-              <small class="fw-medium" style="font-size:0.75rem;color:var(--text-secondary)">
-                <i class="fas fa-calendar-day me-1" aria-hidden="true"></i>Daily Attendance Trend
-              </small>
-            </div>
-            <div class="card-body">
-              <canvas id="dailyChart" aria-label="Daily attendance trend chart" role="img"></canvas>
-            </div>
-          </div>
-        </div>
-        <!-- Weekly Attendance Trend -->
-        <div class="col-md-4">
-          <div class="card chart-card">
-            <div class="card-header py-2">
-              <small class="fw-medium" style="font-size:0.75rem;color:var(--text-secondary)">
-                <i class="fas fa-calendar-week me-1" aria-hidden="true"></i>Weekly Attendance Trend
-              </small>
-            </div>
-            <div class="card-body">
-              <canvas id="weeklyChart" aria-label="Weekly attendance trend chart" role="img"></canvas>
-            </div>
-          </div>
-        </div>
-        <!-- Monthly Attendance Trend -->
-        <div class="col-md-4">
-          <div class="card chart-card">
-            <div class="card-header py-2">
-              <small class="fw-medium" style="font-size:0.75rem;color:var(--text-secondary)">
-                <i class="fas fa-calendar-alt me-1" aria-hidden="true"></i>Monthly Attendance Trend
-              </small>
-            </div>
-            <div class="card-body">
-              <canvas id="monthlyChart" aria-label="Monthly attendance trend chart" role="img"></canvas>
-            </div>
-          </div>
-        </div>
-        <!-- Center-wise Attendance -->
-        <div class="col-md-6">
-          <div class="card chart-card">
-            <div class="card-header py-2">
-              <small class="fw-medium" style="font-size:0.75rem;color:var(--text-secondary)">
-                <i class="fas fa-building me-1" aria-hidden="true"></i>Center-wise Attendance
-              </small>
-            </div>
-            <div class="card-body">
-              <canvas id="centerChart" aria-label="Center-wise attendance chart" role="img"></canvas>
-            </div>
-          </div>
-        </div>
-        <!-- Staff Attendance Comparison -->
-        <div class="col-md-6">
-          <div class="card chart-card">
-            <div class="card-header py-2">
-              <small class="fw-medium" style="font-size:0.75rem;color:var(--text-secondary)">
-                <i class="fas fa-user-check me-1" aria-hidden="true"></i>Staff Attendance Comparison
-              </small>
-            </div>
-            <div class="card-body">
-              <canvas id="staffChart" aria-label="Staff attendance comparison chart" role="img"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ============================================================
-         7. QUICK REPORTS SECTION
-         ============================================================ -->
-    <div role="region" aria-label="Quick report shortcuts" class="mb-3">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <i class="fas fa-bolt" style="color:var(--srsp-accent);font-size:1rem" aria-hidden="true"></i>
-        <h5 class="mb-0" style="font-size:0.9375rem">Quick Reports</h5>
-      </div>
-      <div class="row g-2">
-        <div class="col-md-4 col-6">
-          <a href="#" class="quick-report-card" role="button" aria-label="Generate daily report">
-            <span class="qr-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-calendar-day"></i></span>
-            <div class="qr-text">
-              <h6>Daily Report</h6>
-              <p>Today's attendance summary</p>
-            </div>
+    </aside>
+
+    <div class="dash-main">
+
+      <header class="dash-topbar">
+
+        <div class="topbar-left">
+          <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="bi bi-list"></i>
+          </button>
+          <div class="topbar-title">
+            <h4>Reports &amp; Analytics</h4>
+            <p>Individual teacher report and analytics</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+
+          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+            <i class="bi bi-bell-fill"></i>
+            <span class="badge-count">3</span>
+          </button>
+
+          <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span class="badge-count" style="background:#EF4444;">2</span>
           </a>
-        </div>
-        <div class="col-md-4 col-6">
-          <a href="#" class="quick-report-card" role="button" aria-label="Generate weekly report">
-            <span class="qr-icon icon-bg-primary" aria-hidden="true"><i class="fas fa-calendar-week"></i></span>
-            <div class="qr-text">
-              <h6>Weekly Report</h6>
-              <p>Last 7 days overview</p>
-            </div>
-          </a>
-        </div>
-        <div class="col-md-4 col-6">
-          <a href="#" class="quick-report-card" role="button" aria-label="Generate monthly report">
-            <span class="qr-icon icon-bg-info" aria-hidden="true"><i class="fas fa-calendar-alt"></i></span>
-            <div class="qr-text">
-              <h6>Monthly Report</h6>
-              <p>30-day attendance analysis</p>
-            </div>
-          </a>
-        </div>
-        <div class="col-md-4 col-6">
-          <a href="#" class="quick-report-card" role="button" aria-label="Generate staff report">
-            <span class="qr-icon icon-bg-warning" aria-hidden="true"><i class="fas fa-users"></i></span>
-            <div class="qr-text">
-              <h6>Staff Report</h6>
-              <p>Per-staff attendance</p>
-            </div>
-          </a>
-        </div>
-        <div class="col-md-4 col-6">
-          <a href="#" class="quick-report-card" role="button" aria-label="Generate center report">
-            <span class="qr-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-building"></i></span>
-            <div class="qr-text">
-              <h6>Center Report</h6>
-              <p>Center-wise breakdown</p>
-            </div>
-          </a>
-        </div>
-        <div class="col-md-4 col-6">
-          <a href="#" class="quick-report-card" role="button" aria-label="Generate emergency report">
-            <span class="qr-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-exclamation-triangle"></i></span>
-            <div class="qr-text">
-              <h6>Emergency Report</h6>
-              <p>Incident log summary</p>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
 
-    <!-- ============================================================
-         MAIN CONTENT: TABLE + RECENT REPORTS
-         ============================================================ -->
-    <div class="row g-3 mb-3">
+          <div class="topbar-separator"></div>
 
-      <!-- -------- Left Column: Table -------- -->
-      <div class="col-xl-8">
+          <div class="date-picker">
+            <i class="bi bi-calendar3"></i>
+            <span id="currentDate"></span>
+          </div>
 
-        <!-- ===== 5. REPORT TABLE ===== -->
-        <div class="table-wrapper" role="region" aria-label="Generated reports list">
+          <div class="topbar-separator"></div>
 
-          <!-- Empty State -->
-          <div class="empty-state d-none" id="emptyState">
-            <i class="fas fa-file-alt" aria-hidden="true"></i>
-            <h5>No reports available</h5>
-            <p>No reports match your current filters. Adjust the date range or generate a new report.</p>
-            <button type="button" class="btn btn-primary" id="generateReportFromEmptyBtn">
-              <i class="fas fa-file-alt" aria-hidden="true"></i>
-              Generate Report
+          <div class="dropdown">
+            <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <div class="profile-avatar">AD</div>
+              <div class="profile-info d-none d-md-block">
+                <span class="profile-name">Admin</span>
+                <span class="profile-role">Administrator</span>
+              </div>
             </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
+              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_profile' %}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
+              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_notifications' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><a class="dropdown-item py-2 px-3 text-danger" href="{% url 'login' %}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+            </ul>
           </div>
 
-          <div class="table-responsive">
-            <table class="table" aria-label="Attendance report records">
+        </div>
+
+      </header>
+
+      <div class="dash-content">
+
+        <!-- ============================================================
+             SECTION 1 — Individual Teacher Report (above the fold)
+             ============================================================ -->
+
+        <div class="rp-page-header">
+          <div>
+            <h3 class="rp-page-title">Individual Teacher Report</h3>
+            <p class="rp-page-subtitle">Comprehensive attendance and performance report</p>
+          </div>
+          <div class="rp-header-right">
+            <div class="rp-search-wrap">
+              <i class="bi bi-search rp-search-icon"></i>
+              <input type="text" class="rp-search-input" placeholder="Teacher Search">
+            </div>
+            <div class="rp-datetime">
+              <i class="bi bi-calendar-event"></i>
+              <span id="rpCurrentDateTime"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="rp-section-1">
+
+          <div class="rp-left-col">
+
+            <div class="rp-card rp-teacher-card">
+              <div class="rp-teacher-top">
+                <span class="rp-teacher-avatar" style="background:#E3F3EC;color:#1F5C40;">AH</span>
+                <div>
+                  <h5 class="rp-teacher-name">Ali Hassan</h5>
+                  <span class="rp-teacher-role">Field Teacher</span>
+                </div>
+              </div>
+              <div class="rp-teacher-details">
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Employee ID</span>
+                  <span class="rp-detail-value">SRSP-T001</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Phone</span>
+                  <span class="rp-detail-value">0300-1234567</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Email</span>
+                  <span class="rp-detail-value">ali@example.com</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Status</span>
+                  <span class="rp-detail-value"><span class="rp-badge rp-badge-active">Active</span></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rp-card rp-center-card">
+              <h5 class="rp-card-title"><i class="bi bi-building me-2" style="color:#52B788"></i>Assigned Center Details</h5>
+              <div class="rp-center-details">
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Center Name</span>
+                  <span class="rp-detail-value">Center A</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">District</span>
+                  <span class="rp-detail-value">Peshawar</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Tehsil</span>
+                  <span class="rp-detail-value">Peshawar Tehsil</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Village</span>
+                  <span class="rp-detail-value">Village A</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">GPS Coordinates</span>
+                  <span class="rp-detail-value">34.0150°N, 71.5249°E</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Assigned Date</span>
+                  <span class="rp-detail-value">Jan 15, 2024</span>
+                </div>
+                <div class="rp-detail-row">
+                  <span class="rp-detail-label">Working Time</span>
+                  <span class="rp-detail-value">8:00 AM - 5:00 PM</span>
+                </div>
+              </div>
+              <div class="rp-map-placeholder">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>Google Map Preview</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="rp-right-col">
+
+            <div class="row g-3 mb-0">
+              <div class="col-xl-2 col-md-4 col-6">
+                <div class="rp-stat-card rp-stat-green">
+                  <div class="rp-stat-icon" style="background:#DCFCE7;color:#22C55E"><i class="bi bi-check-lg"></i></div>
+                  <div class="rp-stat-body">
+                    <span class="rp-stat-value">22</span>
+                    <span class="rp-stat-label">Present Days</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-2 col-md-4 col-6">
+                <div class="rp-stat-card rp-stat-red">
+                  <div class="rp-stat-icon" style="background:#FEE2E2;color:#EF4444"><i class="bi bi-x-lg"></i></div>
+                  <div class="rp-stat-body">
+                    <span class="rp-stat-value">3</span>
+                    <span class="rp-stat-label">Absent Days</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-2 col-md-4 col-6">
+                <div class="rp-stat-card rp-stat-orange">
+                  <div class="rp-stat-icon" style="background:#FEF3C7;color:#F59E0B"><i class="bi bi-file-text"></i></div>
+                  <div class="rp-stat-body">
+                    <span class="rp-stat-value">2</span>
+                    <span class="rp-stat-label">Approved Leaves</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-3 col-md-6 col-6">
+                <div class="rp-stat-card rp-stat-blue">
+                  <div class="rp-stat-icon" style="background:#DBEAFE;color:#3B82F6"><i class="bi bi-percent"></i></div>
+                  <div class="rp-stat-body">
+                    <span class="rp-stat-value">81.48%</span>
+                    <span class="rp-stat-label">Attendance %</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-3 col-md-6 col-6">
+                <div class="rp-stat-card rp-stat-purple">
+                  <div class="rp-stat-icon" style="background:#EDE9FE;color:#8B5CF6"><i class="bi bi-clock-history"></i></div>
+                  <div class="rp-stat-body">
+                    <span class="rp-stat-value">176h</span>
+                    <span class="rp-stat-label">Total Working Hours</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="rp-analytics-grid">
+
+              <div class="rp-card rp-chart-card">
+                <h5 class="rp-card-title"><i class="bi bi-bar-chart-fill me-2" style="color:#52B788"></i>Attendance Analysis</h5>
+                <div class="rp-chart-placeholder" style="height:180px">
+                  <div class="rp-bar-chart">
+                    <div class="rp-bar" style="height:70%"><span>Mon</span></div>
+                    <div class="rp-bar" style="height:85%"><span>Tue</span></div>
+                    <div class="rp-bar" style="height:60%"><span>Wed</span></div>
+                    <div class="rp-bar" style="height:90%"><span>Thu</span></div>
+                    <div class="rp-bar" style="height:75%"><span>Fri</span></div>
+                    <div class="rp-bar" style="height:50%"><span>Sat</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rp-card rp-chart-card">
+                <h5 class="rp-card-title"><i class="bi bi-graph-up-arrow me-2" style="color:#52B788"></i>Daily Attendance Trend</h5>
+                <div class="rp-chart-placeholder" style="height:180px">
+                  <div class="rp-line-chart">
+                    <svg viewBox="0 0 300 120" style="width:100%;height:100%">
+                      <polyline points="0,100 40,60 80,80 120,30 160,50 200,20 240,45 280,35"
+                                fill="none" stroke="#52B788" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <polyline points="0,100 40,60 80,80 120,30 160,50 200,20 240,45 280,35"
+                                fill="none" stroke="#52B788" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.15"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="rp-card rp-map-card">
+              <h5 class="rp-card-title"><i class="bi bi-geo-alt-fill me-2" style="color:#52B788"></i>GPS Tracking</h5>
+              <div class="rp-map-placeholder" style="height:160px">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>Google Map Preview — Live GPS Tracking</span>
+              </div>
+            </div>
+
+            <div class="rp-metrics-grid">
+              <div class="rp-metric-card">
+                <i class="bi bi-clock" style="color:#3B82F6"></i>
+                <div>
+                  <span class="rp-metric-value">8:42 AM</span>
+                  <span class="rp-metric-label">Avg Check-in Time</span>
+                </div>
+              </div>
+              <div class="rp-metric-card">
+                <i class="bi bi-clock" style="color:#8B5CF6"></i>
+                <div>
+                  <span class="rp-metric-value">5:08 PM</span>
+                  <span class="rp-metric-label">Avg Check-out Time</span>
+                </div>
+              </div>
+              <div class="rp-metric-card">
+                <i class="bi bi-exclamation-triangle" style="color:#EF4444"></i>
+                <div>
+                  <span class="rp-metric-value">4</span>
+                  <span class="rp-metric-label">Late Arrivals</span>
+                </div>
+              </div>
+              <div class="rp-metric-card">
+                <i class="bi bi-file-text" style="color:#F59E0B"></i>
+                <div>
+                  <span class="rp-metric-value">2</span>
+                  <span class="rp-metric-label">Leave Taken</span>
+                </div>
+              </div>
+              <div class="rp-metric-card">
+                <i class="bi bi-clock-history" style="color:#22C55E"></i>
+                <div>
+                  <span class="rp-metric-value">176h</span>
+                  <span class="rp-metric-label">Working Hours</span>
+                </div>
+              </div>
+              <div class="rp-metric-card">
+                <i class="bi bi-star-fill" style="color:#F59E0B"></i>
+                <div>
+                  <span class="rp-metric-value">4.2/5</span>
+                  <span class="rp-metric-label">Overall Rating</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ============================================================
+             SECTION 2 — Attendance Table & Bottom Analytics (below scroll)
+             ============================================================ -->
+
+        <hr class="rp-divider">
+
+        <div class="rp-section-header">
+          <h4><i class="bi bi-table me-2"></i>Attendance History &amp; Detailed Analytics</h4>
+        </div>
+
+        <div class="rp-card rp-table-card">
+          <div class="rp-table-scroll">
+            <table class="rp-table" id="reportsTable">
               <thead>
                 <tr>
-                  <th scope="col">Report ID</th>
-                  <th scope="col">Staff Name</th>
-                  <th scope="col">Center</th>
-                  <th scope="col">Date</th>
-                  <th scope="col">Check-In</th>
-                  <th scope="col">Check-Out</th>
-                  <th scope="col">Hours</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" class="text-end">Actions</th>
+                  <th>Date</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Working Hours</th>
+                  <th>Attendance Status</th>
+                  <th>Location Verified</th>
+                  <th>GPS Accuracy</th>
+                  <th>Geo Fence Status</th>
                 </tr>
               </thead>
               <tbody>
-                {% for report in report_list %}
                 <tr>
-                  <td><span class="staff-id-tag">{{ report.id }}</span></td>
-                  <td><span class="fw-semibold">{{ report.name }}</span></td>
-                  <td>{{ report.center }}</td>
-                  <td>{{ report.date }}</td>
-                  <td>{{ report.check_in }}</td>
-                  <td>{{ report.check_out }}</td>
-                  <td>{{ report.hours }}</td>
-                  <td>
-                    <span class="status-badge {{ report.status_class }}">
-                      <span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span>
-                      {{ report.status }}
-                    </span>
-                  </td>
-                  <td class="text-end table-actions-cell">
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report for {{ report.name }}">
-                      <i class="fas fa-eye"></i>
-                    </button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report for {{ report.name }}">
-                      <i class="fas fa-download"></i>
-                    </button>
-                    <button type="button" class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report for {{ report.name }}">
-                      <i class="fas fa-print"></i>
-                    </button>
-                  </td>
-                </tr>
-                {% empty %}
-                <!-- ===== Placeholder Demo Data ===== -->
-                <tr>
-                  <td><span class="staff-id-tag">RPT-001</span></td>
-                  <td><span class="fw-semibold">Ali Hassan</span></td>
-                  <td>Center 5 — Saddar</td>
-                  <td>Jul 18, 2026</td>
-                  <td>08:02 AM</td>
-                  <td>05:10 PM</td>
+                  <td class="rp-cell-date">Jul 18, 2026</td>
+                  <td>9:02 AM</td>
+                  <td>5:10 PM</td>
                   <td>8h 08m</td>
-                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span></td>
-                  <td class="text-end table-actions-cell">
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report"><i class="fas fa-download"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report"><i class="fas fa-print"></i></button>
-                  </td>
+                  <td><span class="rp-badge rp-badge-present">Present</span></td>
+                  <td><span class="rp-gps rp-gps-yes"><i class="bi bi-check-circle-fill"></i> Yes</span></td>
+                  <td class="rp-cell-muted">High (5m)</td>
+                  <td><span class="rp-geo rp-geo-in"><i class="bi bi-shield-fill-check"></i> Inside</span></td>
                 </tr>
                 <tr>
-                  <td><span class="staff-id-tag">RPT-002</span></td>
-                  <td><span class="fw-semibold">Sara Khan</span></td>
-                  <td>Center 2 — Liaquatabad</td>
-                  <td>Jul 18, 2026</td>
+                  <td class="rp-cell-date">Jul 17, 2026</td>
+                  <td>9:15 AM</td>
+                  <td>5:05 PM</td>
+                  <td>7h 50m</td>
+                  <td><span class="rp-badge rp-badge-present">Present</span></td>
+                  <td><span class="rp-gps rp-gps-yes"><i class="bi bi-check-circle-fill"></i> Yes</span></td>
+                  <td class="rp-cell-muted">High (3m)</td>
+                  <td><span class="rp-geo rp-geo-in"><i class="bi bi-shield-fill-check"></i> Inside</span></td>
+                </tr>
+                <tr>
+                  <td class="rp-cell-date">Jul 16, 2026</td>
+                  <td>8:55 AM</td>
+                  <td>5:15 PM</td>
+                  <td>8h 20m</td>
+                  <td><span class="rp-badge rp-badge-present">Present</span></td>
+                  <td><span class="rp-gps rp-gps-yes"><i class="bi bi-check-circle-fill"></i> Yes</span></td>
+                  <td class="rp-cell-muted">High (2m)</td>
+                  <td><span class="rp-geo rp-geo-in"><i class="bi bi-shield-fill-check"></i> Inside</span></td>
+                </tr>
+                <tr>
+                  <td class="rp-cell-date">Jul 15, 2026</td>
+                  <td>9:30 AM</td>
+                  <td>5:20 PM</td>
+                  <td>7h 50m</td>
+                  <td><span class="rp-badge rp-badge-late">Late</span></td>
+                  <td><span class="rp-gps rp-gps-yes"><i class="bi bi-check-circle-fill"></i> Yes</span></td>
+                  <td class="rp-cell-muted">Medium (10m)</td>
+                  <td><span class="rp-geo rp-geo-in"><i class="bi bi-shield-fill-check"></i> Inside</span></td>
+                </tr>
+                <tr>
+                  <td class="rp-cell-date">Jul 14, 2026</td>
                   <td>—</td>
                   <td>—</td>
                   <td>—</td>
-                  <td><span class="status-badge inactive"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Absent</span></td>
-                  <td class="text-end table-actions-cell">
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report"><i class="fas fa-download"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report"><i class="fas fa-print"></i></button>
-                  </td>
+                  <td><span class="rp-badge rp-badge-leave">Leave</span></td>
+                  <td><span class="rp-gps rp-gps-no"><i class="bi bi-x-circle-fill"></i> No</span></td>
+                  <td class="rp-cell-muted">—</td>
+                  <td><span class="rp-geo rp-geo-out"><i class="bi bi-shield-exclamation"></i> Outside</span></td>
                 </tr>
                 <tr>
-                  <td><span class="staff-id-tag">RPT-003</span></td>
-                  <td><span class="fw-semibold">Hina Yousaf</span></td>
-                  <td>Center 3 — Korangi</td>
-                  <td>Jul 18, 2026</td>
-                  <td>09:45 AM</td>
-                  <td>05:10 PM</td>
-                  <td>7h 25m</td>
-                  <td><span class="status-badge late"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Late</span></td>
-                  <td class="text-end table-actions-cell">
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report"><i class="fas fa-download"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report"><i class="fas fa-print"></i></button>
-                  </td>
+                  <td class="rp-cell-date">Jul 13, 2026</td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td>—</td>
+                  <td><span class="rp-badge rp-badge-absent">Absent</span></td>
+                  <td><span class="rp-gps rp-gps-no"><i class="bi bi-x-circle-fill"></i> No</span></td>
+                  <td class="rp-cell-muted">—</td>
+                  <td><span class="rp-geo rp-geo-out"><i class="bi bi-shield-exclamation"></i> Outside</span></td>
                 </tr>
                 <tr>
-                  <td><span class="staff-id-tag">RPT-004</span></td>
-                  <td><span class="fw-semibold">Muhammad Riaz</span></td>
-                  <td>Center 1 — Gulshan</td>
-                  <td>Jul 17, 2026</td>
-                  <td>07:55 AM</td>
-                  <td>03:30 PM</td>
-                  <td>7h 35m</td>
-                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span></td>
-                  <td class="text-end table-actions-cell">
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report"><i class="fas fa-download"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report"><i class="fas fa-print"></i></button>
-                  </td>
+                  <td class="rp-cell-date">Jul 12, 2026</td>
+                  <td>9:00 AM</td>
+                  <td>5:10 PM</td>
+                  <td>8h 10m</td>
+                  <td><span class="rp-badge rp-badge-present">Present</span></td>
+                  <td><span class="rp-gps rp-gps-yes"><i class="bi bi-check-circle-fill"></i> Yes</span></td>
+                  <td class="rp-cell-muted">High (4m)</td>
+                  <td><span class="rp-geo rp-geo-in"><i class="bi bi-shield-fill-check"></i> Inside</span></td>
                 </tr>
-                <tr>
-                  <td><span class="staff-id-tag">RPT-005</span></td>
-                  <td><span class="fw-semibold">Zainab Ali</span></td>
-                  <td>Center 4 — North Nazimabad</td>
-                  <td>Jul 17, 2026</td>
-                  <td>08:30 AM</td>
-                  <td>05:15 PM</td>
-                  <td>8h 45m</td>
-                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span></td>
-                  <td class="text-end table-actions-cell">
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report"><i class="fas fa-download"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report"><i class="fas fa-print"></i></button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><span class="staff-id-tag">RPT-006</span></td>
-                  <td><span class="fw-semibold">Fahad Hussain</span></td>
-                  <td>Center 5 — Saddar</td>
-                  <td>Jul 16, 2026</td>
-                  <td>08:15 AM</td>
-                  <td>05:05 PM</td>
-                  <td>8h 50m</td>
-                  <td><span class="status-badge active"><span class="fas fa-circle" style="font-size:0.375rem" aria-hidden="true"></span> Present</span></td>
-                  <td class="text-end table-actions-cell">
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="View" aria-label="View report"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Download" aria-label="Download report"><i class="fas fa-download"></i></button>
-                    <button class="btn btn-icon btn-sm btn-outline-secondary" title="Print" aria-label="Print report"><i class="fas fa-print"></i></button>
-                  </td>
-                </tr>
-                {% endfor %}
               </tbody>
             </table>
           </div>
-
-          <!-- Pagination -->
-          <div class="pagination-nav" role="navigation" aria-label="Reports pagination">
-            <span class="pagination-info">
-              Showing <strong>1</strong> to <strong>6</strong> of <strong>{{ total_records|default:"1,248" }}</strong> records
-            </span>
-            <nav aria-label="Page navigation">
-              <ul class="pagination pagination-sm mb-0">
-                <li class="page-item disabled">
-                  <a class="page-link" href="#" tabindex="-1" aria-disabled="true" aria-label="Previous page">
-                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
-                  </a>
-                </li>
-                <li class="page-item active" aria-current="page"><a class="page-link" href="#">1</a></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Page 2">2</a></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Page 3">3</a></li>
-                <li class="page-item disabled"><span class="page-link">...</span></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Page 10">10</a></li>
-                <li class="page-item"><a class="page-link" href="#" aria-label="Next page"><i class="fas fa-chevron-right" aria-hidden="true"></i></a></li>
-              </ul>
-            </nav>
-          </div>
-
         </div>
-        <!-- /.table-wrapper -->
 
-      </div>
-      <!-- /.col-xl-8 -->
-
-      <!-- -------- Right Column: Recent Reports -------- -->
-      <div class="col-xl-4">
-
-        <!-- ============================================================
-             8. RECENT REPORTS
-             ============================================================ -->
-        <div class="card h-100" role="region" aria-label="Recently generated reports">
-          <div class="card-header d-flex align-items-center gap-2">
-            <i class="fas fa-history" style="color:var(--srsp-accent);font-size:1rem" aria-hidden="true"></i>
-            <h5 class="mb-0" style="font-size:0.875rem">Recent Reports</h5>
+        <div class="rp-bottom-charts">
+          <div class="rp-card rp-chart-card">
+            <h5 class="rp-card-title"><i class="bi bi-graph-up me-2" style="color:#52B788"></i>Daily Attendance Trend</h5>
+            <div class="rp-chart-placeholder" style="height:200px">
+              <div class="rp-line-chart">
+                <svg viewBox="0 0 300 120" style="width:100%;height:100%">
+                  <polyline points="0,100 30,70 60,85 90,40 120,55 150,25 180,50 210,35 240,60 270,30 300,45"
+                            fill="none" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <polyline points="0,100 30,70 60,85 90,40 120,55 150,25 180,50 210,35 240,60 270,30 300,45"
+                            fill="none" stroke="#22C55E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.12"/>
+                </svg>
+              </div>
+            </div>
           </div>
-          <div class="card-body py-3">
-            <div class="recent-report-item">
-              <span class="rr-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-calendar-day"></i></span>
-              <div class="rr-info">
-                <p>Daily Attendance Report</p>
-                <small>Jul 18, 2026 · Generated by Admin</small>
+          <div class="rp-card rp-chart-card">
+            <h5 class="rp-card-title"><i class="bi bi-pie-chart-fill me-2" style="color:#52B788"></i>Attendance % Breakdown</h5>
+            <div class="rp-chart-placeholder" style="height:200px">
+              <div class="rp-pie-placeholder">
+                <svg viewBox="0 0 120 120" style="width:120px;height:120px">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#22C55E" stroke-width="20" stroke-dasharray="220 94" stroke-dashoffset="0" transform="rotate(-90,60,60)"/>
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#F59E0B" stroke-width="20" stroke-dasharray="50 264" stroke-dashoffset="-225" transform="rotate(-90,60,60)"/>
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#EF4444" stroke-width="20" stroke-dasharray="30 284" stroke-dashoffset="-280" transform="rotate(-90,60,60)"/>
+                </svg>
+                <div class="rp-pie-labels">
+                  <span><span style="background:#22C55E"></span>Present 81%</span>
+                  <span><span style="background:#F59E0B"></span>Leave 7%</span>
+                  <span><span style="background:#EF4444"></span>Absent 12%</span>
+                </div>
               </div>
-              <button class="btn btn-icon btn-sm btn-outline-secondary flex-shrink-0" title="Download" aria-label="Download daily report">
-                <i class="fas fa-download"></i>
-              </button>
             </div>
-            <div class="recent-report-item">
-              <span class="rr-icon icon-bg-primary" aria-hidden="true"><i class="fas fa-calendar-week"></i></span>
-              <div class="rr-info">
-                <p>Weekly Attendance Summary</p>
-                <small>Jul 12–18, 2026 · Generated by Admin</small>
+          </div>
+          <div class="rp-card rp-chart-card">
+            <h5 class="rp-card-title"><i class="bi bi-bar-chart-steps me-2" style="color:#52B788"></i>Monthly Performance</h5>
+            <div class="rp-chart-placeholder" style="height:200px">
+              <div class="rp-bar-chart rp-bar-chart-sm">
+                <div class="rp-bar" style="height:60%"><span>Jan</span></div>
+                <div class="rp-bar" style="height:75%"><span>Feb</span></div>
+                <div class="rp-bar" style="height:55%"><span>Mar</span></div>
+                <div class="rp-bar" style="height:85%"><span>Apr</span></div>
+                <div class="rp-bar" style="height:70%"><span>May</span></div>
+                <div class="rp-bar" style="height:80%"><span>Jun</span></div>
+                <div class="rp-bar" style="height:65%"><span>Jul</span></div>
               </div>
-              <button class="btn btn-icon btn-sm btn-outline-secondary flex-shrink-0" title="Download" aria-label="Download weekly report">
-                <i class="fas fa-download"></i>
-              </button>
-            </div>
-            <div class="recent-report-item">
-              <span class="rr-icon icon-bg-warning" aria-hidden="true"><i class="fas fa-users"></i></span>
-              <div class="rr-info">
-                <p>Staff Performance Report</p>
-                <small>Jul 15, 2026 · Generated by System</small>
-              </div>
-              <button class="btn btn-icon btn-sm btn-outline-secondary flex-shrink-0" title="Download" aria-label="Download staff report">
-                <i class="fas fa-download"></i>
-              </button>
-            </div>
-            <div class="recent-report-item">
-              <span class="rr-icon icon-bg-accent" aria-hidden="true"><i class="fas fa-building"></i></span>
-              <div class="rr-info">
-                <p>Center Comparison Report</p>
-                <small>Jul 10, 2026 · Generated by Admin</small>
-              </div>
-              <button class="btn btn-icon btn-sm btn-outline-secondary flex-shrink-0" title="Download" aria-label="Download center report">
-                <i class="fas fa-download"></i>
-              </button>
-            </div>
-            <div class="recent-report-item">
-              <span class="rr-icon icon-bg-danger" aria-hidden="true"><i class="fas fa-exclamation-triangle"></i></span>
-              <div class="rr-info">
-                <p>Emergency Incident Log</p>
-                <small>Jul 08, 2026 · Generated by System</small>
-              </div>
-              <button class="btn btn-icon btn-sm btn-outline-secondary flex-shrink-0" title="Download" aria-label="Download emergency report">
-                <i class="fas fa-download"></i>
-              </button>
-            </div>
-            <div class="recent-report-item">
-              <span class="rr-icon icon-bg-info" aria-hidden="true"><i class="fas fa-calendar-alt"></i></span>
-              <div class="rr-info">
-                <p>Monthly Attendance Overview</p>
-                <small>Jul 01, 2026 · Generated by Admin</small>
-              </div>
-              <button class="btn btn-icon btn-sm btn-outline-secondary flex-shrink-0" title="Download" aria-label="Download monthly report">
-                <i class="fas fa-download"></i>
-              </button>
             </div>
           </div>
         </div>
 
-      </div>
-      <!-- /.col-xl-4 -->
+        <div class="rp-bottom-cards">
 
-    </div>
-    <!-- /.row -->
+          <div class="rp-card rp-action-card">
+            <h5 class="rp-card-title"><i class="bi bi-download me-2" style="color:#52B788"></i>Report Actions</h5>
+            <div class="rp-action-buttons">
+              <button class="rp-btn rp-btn-pdf"><i class="bi bi-filetype-pdf"></i> Download PDF Report</button>
+              <button class="rp-btn rp-btn-excel"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+              <button class="rp-btn rp-btn-print"><i class="bi bi-printer"></i> Print Report</button>
+            </div>
+          </div>
 
-    <!-- ============================================================
-         6. EXPORT SECTION
-         ============================================================ -->
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
-      <div>
-        <i class="fas fa-download me-1" style="color:var(--text-secondary)" aria-hidden="true"></i>
-        <span style="font-size:0.8125rem;color:var(--text-secondary)">Export Options</span>
+          <div class="rp-card rp-emergency-card">
+            <h5 class="rp-card-title"><i class="bi bi-exclamation-triangle-fill me-2" style="color:#EF4444"></i>Emergency Information</h5>
+            <div class="rp-emergency-details">
+              <div class="rp-detail-row">
+                <span class="rp-detail-label">Emergency Contact</span>
+                <span class="rp-detail-value">+92-300-111-2222</span>
+              </div>
+              <div class="rp-detail-row">
+                <span class="rp-detail-label">Emergency Status</span>
+                <span class="rp-detail-value"><span class="rp-badge rp-badge-active">Active</span></span>
+              </div>
+              <div class="rp-detail-row">
+                <span class="rp-detail-label">SOS History</span>
+                <span class="rp-detail-value">2 Alerts</span>
+              </div>
+              <div class="rp-detail-row">
+                <span class="rp-detail-label">Emergency Notes</span>
+                <span class="rp-detail-value">No active emergency</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rp-card rp-activity-card">
+            <h5 class="rp-card-title"><i class="bi bi-activity me-2" style="color:#52B788"></i>Recent Activity</h5>
+            <div class="rp-activity-timeline">
+              <div class="rp-activity-item">
+                <span class="rp-activity-dot" style="background:#22C55E"></span>
+                <div>
+                  <span class="rp-activity-text">Teacher Checked In</span>
+                  <span class="rp-activity-time">Today, 9:02 AM</span>
+                </div>
+              </div>
+              <div class="rp-activity-item">
+                <span class="rp-activity-dot" style="background:#3B82F6"></span>
+                <div>
+                  <span class="rp-activity-text">Attendance Marked</span>
+                  <span class="rp-activity-time">Today, 9:05 AM</span>
+                </div>
+              </div>
+              <div class="rp-activity-item">
+                <span class="rp-activity-dot" style="background:#F59E0B"></span>
+                <div>
+                  <span class="rp-activity-text">Leave Approved</span>
+                  <span class="rp-activity-time">Jul 14, 2026</span>
+                </div>
+              </div>
+              <div class="rp-activity-item">
+                <span class="rp-activity-dot" style="background:#EF4444"></span>
+                <div>
+                  <span class="rp-activity-text">SOS Triggered</span>
+                  <span class="rp-activity-time">Jul 10, 2026</span>
+                </div>
+              </div>
+              <div class="rp-activity-item">
+                <span class="rp-activity-dot" style="background:#22C55E"></span>
+                <div>
+                  <span class="rp-activity-text">Teacher Checked Out</span>
+                  <span class="rp-activity-time">Jul 18, 5:10 PM</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
       </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="Export as CSV">
-          <i class="fas fa-file-csv" aria-hidden="true"></i>
-          Export CSV
-        </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="Export as PDF">
-          <i class="fas fa-file-pdf" aria-hidden="true"></i>
-          Export PDF
-        </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="Print report">
-          <i class="fas fa-print" aria-hidden="true"></i>
-          Print Report
-        </button>
-        <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="Download as Excel">
-          <i class="fas fa-file-excel" aria-hidden="true"></i>
-          Download Excel
-        </button>
-      </div>
+
     </div>
 
   </div>
-  <!-- /.flex-1 -->
-</div>
-<!-- /.flex wrapper -->
 
-{% endblock %}
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script>
-(function() {
-  'use strict';
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  /* ============================================================
-     Chart.js Color Constants
-     ============================================================ */
-  var COLORS = {
-    green:      '#2FBF8F',
-    greenDark:  '#123524',
-    greenLight: 'rgba(47,191,143,0.12)',
-    success:    '#1F9D63',
-    danger:     '#C0392B',
-    warning:    '#B8860B',
-    info:       '#2563EB',
-    border:     '#E5E9E7',
-    textSec:    '#5C6B63',
-    fillSoft:   '#EEF1EF'
-  };
-
-  var chartDefaults = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: { boxWidth: 12, padding: 12, font: { family: 'Inter', size: 10 } }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color: COLORS.fillSoft, drawBorder: false },
-        ticks: { font: { family: 'Inter', size: 9 }, color: COLORS.textSec }
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: COLORS.fillSoft, drawBorder: false },
-        ticks: { font: { family: 'Inter', size: 9 }, color: COLORS.textSec }
-      }
-    }
-  };
-
-  /* ============================================================
-     1. Daily Attendance Trend (Line)
-     ============================================================ */
-  var dailyCtx = document.getElementById('dailyChart');
-  if (dailyCtx) {
-    new Chart(dailyCtx, {
-      type: 'line',
-      data: {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        datasets: [{
-          label: 'Present',
-          data: [21, 19, 23, 20, 22, 18],
-          borderColor: COLORS.green,
-          backgroundColor: COLORS.greenLight,
-          fill: true,
-          tension: 0.35,
-          pointRadius: 3,
-          pointBackgroundColor: COLORS.green
-        }]
-      },
-      options: chartDefaults
-    });
-  }
-
-  /* ============================================================
-     2. Weekly Attendance Trend (Line)
-     ============================================================ */
-  var weeklyCtx = document.getElementById('weeklyChart');
-  if (weeklyCtx) {
-    new Chart(weeklyCtx, {
-      type: 'line',
-      data: {
-        labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5'],
-        datasets: [{
-          label: 'Attendance %',
-          data: [84, 88, 86, 91, 87],
-          borderColor: COLORS.info,
-          backgroundColor: 'rgba(37,99,235,0.10)',
-          fill: true,
-          tension: 0.35,
-          pointRadius: 3,
-          pointBackgroundColor: COLORS.info
-        }]
-      },
-      options: chartDefaults
-    });
-  }
-
-  /* ============================================================
-     3. Monthly Attendance Trend (Bar)
-     ============================================================ */
-  var monthlyCtx = document.getElementById('monthlyChart');
-  if (monthlyCtx) {
-    new Chart(monthlyCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          label: 'Present',
-          data: [85, 82, 88, 90, 86, 92],
-          backgroundColor: COLORS.green,
-          borderRadius: 4,
-          barPercentage: 0.55
-        }]
-      },
-      options: chartDefaults
-    });
-  }
-
-  /* ============================================================
-     4. Center-wise Attendance (Bar)
-     ============================================================ */
-  var centerCtx = document.getElementById('centerChart');
-  if (centerCtx) {
-    new Chart(centerCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Center 1', 'Center 2', 'Center 3', 'Center 4', 'Center 5'],
-        datasets: [
-          {
-            label: 'Present',
-            data: [22, 18, 15, 20, 24],
-            backgroundColor: COLORS.green,
-            borderRadius: 3,
-            barPercentage: 0.35
-          },
-          {
-            label: 'Absent',
-            data: [2, 4, 5, 3, 1],
-            backgroundColor: COLORS.danger,
-            borderRadius: 3,
-            barPercentage: 0.35
-          }
-        ]
-      },
-      options: chartDefaults
-    });
-  }
-
-  /* ============================================================
-     5. Staff Attendance Comparison (Horizontal Bar)
-     ============================================================ */
-  var staffCtx = document.getElementById('staffChart');
-  if (staffCtx) {
-    new Chart(staffCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Ali H.', 'Sara K.', 'Hina Y.', 'M. Riaz', 'Zainab A.', 'Fahad H.'],
-        datasets: [{
-          label: 'Days Present (last 30)',
-          data: [27, 25, 22, 28, 26, 24],
-          backgroundColor: [
-            COLORS.green, COLORS.info, COLORS.warning,
-            COLORS.green, COLORS.info, COLORS.warning
-          ],
-          borderRadius: 4,
-          barPercentage: 0.55
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
-          legend: { display: false }
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            max: 30,
-            grid: { color: COLORS.fillSoft, drawBorder: false },
-            ticks: { font: { family: 'Inter', size: 9 }, color: COLORS.textSec }
-          },
-          y: {
-            grid: { display: false, drawBorder: false },
-            ticks: { font: { family: 'Inter', size: 9 }, color: COLORS.textSec }
-          }
-        }
-      }
-    });
-  }
-
-  /* ============================================================
-     Generate Report Button
-     ============================================================ */
-  var genBtn = document.getElementById('generateReportBtn');
-  if (genBtn) {
-    genBtn.addEventListener('click', function() {
-      this.disabled = true;
-      this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Generating...';
-      setTimeout(function() {
-        genBtn.disabled = false;
-        genBtn.innerHTML = '<i class="fas fa-file-alt" aria-hidden="true"></i> Generate Report';
-        window.showToast('Report generated successfully', 'success');
-      }, 1800);
-    });
-  }
-
-  /* ============================================================
-     Reset Filters
-     ============================================================ */
-  var resetBtn = document.getElementById('resetFiltersBtn');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', function() {
-      document.querySelectorAll('.filter-bar .form-control, .filter-bar .form-select, .filter-bar input[type="date"]').forEach(function(el) {
-        el.value = '';
-      });
-      window.showToast('Filters have been reset', 'info');
-    });
-  }
-
-  /* ============================================================
-     Export / Print Buttons
-     ============================================================ */
-  document.querySelectorAll('.btn-outline-secondary.btn-sm').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      var text = this.textContent.trim();
-      var actions = {
-        'Export CSV':  { msg: 'CSV exported successfully', type: 'success' },
-        'Export PDF':  { msg: 'PDF exported successfully', type: 'success' },
-        'Print Report': { msg: 'Print dialog opened', type: 'info' },
-        'Download Excel': { msg: 'Excel file downloaded', type: 'success' }
-      };
-      var action = actions[text];
-      if (action) {
-        e.preventDefault();
-        window.showToast(action.msg, action.type);
-      }
-    });
-  });
-
-  /* ============================================================
-     Quick Report Cards (simulate generation)
-     ============================================================ */
-  document.querySelectorAll('.quick-report-card').forEach(function(card) {
-    card.addEventListener('click', function(e) {
-      e.preventDefault();
-      var label = this.querySelector('.qr-text h6')?.textContent || 'Report';
-      window.showToast(label + ' generated successfully', 'success');
-    });
-  });
-
-  /* ============================================================
-     Recent Report Download Buttons
-     ============================================================ */
-  document.querySelectorAll('.recent-report-item .btn-outline-secondary').forEach(function(btn) {
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var reportName = this.closest('.recent-report-item')?.querySelector('.rr-info p')?.textContent || 'Report';
-      window.showToast(reportName + ' downloaded', 'success');
-    });
-  });
-
-})();
-</script>
-{% endblock %}
+  <script src="{% static 'js/admin_dashboard.js' %}"></script>
+  <script src="{% static 'js/reports.js' %}"></script>
+</body>
+</html>

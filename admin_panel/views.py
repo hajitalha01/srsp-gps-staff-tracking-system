@@ -67,3 +67,9 @@ def emergency_alerts(request):
 @temp_admin_required
 def notifications_settings(request):
     return render(request, 'admin_panel/notifications_settings.html')
+
+
+@temp_login_required
+@temp_admin_required
+def profile_settings(request):
+    return render(request, 'admin_panel/profile_settings.html')

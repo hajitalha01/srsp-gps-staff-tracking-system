@@ -1,0 +1,399 @@
+/* ============================================================
+   Center Management — Premium Design
+   ============================================================ */
+
+/* ===== Page Header ===== */
+.cm-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cm-page-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-800, #1A2E24);
+}
+
+.cm-page-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8125rem;
+  color: var(--gray-500, #6B7F76);
+}
+
+.cm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cm-btn-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background: #fff;
+  color: var(--gray-700, #33483E);
+  border: 1px solid var(--gray-300, #CBD5D1);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cm-btn-filter i {
+  font-size: 0.9375rem;
+}
+
+.cm-btn-filter:hover {
+  background: var(--gray-100, #F0F4F2);
+  border-color: var(--gray-400, #94A39C);
+}
+
+.cm-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  background: #22C55E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+}
+
+.cm-btn-add i {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.cm-btn-add:hover {
+  background: #16A34A;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+  transform: translateY(-1px);
+}
+
+.cm-btn-add:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(34, 197, 94, 0.2);
+}
+
+/* ===== Search Card ===== */
+.cm-search-card {
+  background: #fff;
+  border: 1px solid var(--gray-200, #E2E8E5);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(13, 43, 31, 0.06);
+  margin-bottom: 18px;
+}
+
+.cm-search-wrap {
+  position: relative;
+  max-width: 400px;
+}
+
+.cm-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400, #94A39C);
+  font-size: 0.875rem;
+  pointer-events: none;
+}
+
+.cm-search-input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1px solid var(--gray-300, #CBD5D1);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--gray-800, #1A2E24);
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.cm-search-input:focus {
+  border-color: #52B788;
+  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.12);
+}
+
+.cm-search-input::placeholder {
+  color: var(--gray-400, #94A39C);
+}
+
+/* ===== Table Card ===== */
+.cm-table-card {
+  background: #fff;
+  border: 1px solid var(--gray-200, #E2E8E5);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(13, 43, 31, 0.06);
+  overflow: hidden;
+}
+
+.cm-table-scroll {
+  overflow-x: auto;
+}
+
+.cm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.cm-table thead th {
+  background: #F8FAF9;
+  color: var(--gray-500, #6B7F76);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-200, #E2E8E5);
+  white-space: nowrap;
+  text-align: left;
+}
+
+.cm-th-action {
+  text-align: center;
+  width: 90px;
+}
+
+.cm-table tbody td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--gray-100, #F0F4F2);
+  color: var(--gray-800, #1A2E24);
+}
+
+.cm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cm-table tbody tr:hover {
+  background: #E8F5E9;
+}
+
+.cm-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+/* Center ID tag */
+.cm-id-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #F0F4F2;
+  color: var(--gray-600, #4D655C);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* Center name */
+.cm-name {
+  font-weight: 500;
+  color: var(--gray-800, #1A2E24);
+  font-size: 0.875rem;
+}
+
+/* Muted cell text */
+.cm-cell-muted {
+  color: var(--gray-500, #6B7F76) !important;
+  font-size: 0.8125rem;
+}
+
+/* Teacher cell with avatar */
+.cm-teacher-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cm-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+/* Status / Attendance badges */
+.cm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cm-badge i {
+  font-size: 0.4375rem;
+}
+
+.cm-badge-active {
+  background: #DCFCE7;
+  color: #22C55E;
+}
+
+.cm-badge-present {
+  background: #DCFCE7;
+  color: #22C55E;
+}
+
+.cm-badge-absent {
+  background: #FEE2E2;
+  color: #EF4444;
+}
+
+/* Action cell */
+.cm-action-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cm-btn-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: #2563EB;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.cm-btn-view:hover {
+  background: #1D4ED8;
+  transform: translateY(-1px);
+}
+
+.cm-btn-view:active {
+  transform: translateY(0);
+}
+
+/* ===== Table Footer ===== */
+.cm-table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-200, #E2E8E5);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cm-footer-info {
+  font-size: 0.8125rem;
+  color: var(--gray-500, #6B7F76);
+}
+
+.cm-pagination {
+  display: flex;
+  gap: 4px;
+}
+
+.cm-page-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--gray-300, #CBD5D1);
+  background: #fff;
+  color: var(--gray-500, #6B7F76);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cm-page-btn:hover:not(.disabled):not(.active) {
+  background: #F0F4F2;
+  color: var(--gray-800, #1A2E24);
+}
+
+.cm-page-btn.active {
+  background: #52B788;
+  border-color: #52B788;
+  color: #0D2B1F;
+  font-weight: 600;
+}
+
+.cm-page-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 991.98px) {
+  .cm-search-wrap {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .cm-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cm-header-actions {
+    width: 100%;
+  }
+
+  .cm-btn-filter {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .cm-btn-add {
+    flex: 2;
+    justify-content: center;
+  }
+
+  .cm-table thead th,
+  .cm-table tbody td {
+    padding: 10px 12px;
+  }
+
+  .cm-table-footer {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .cm-search-card {
+    padding: 12px;
+  }
+}
