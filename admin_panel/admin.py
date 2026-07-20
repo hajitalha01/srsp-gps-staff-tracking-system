@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Center, Attendance, EmergencyAlert
+from .models import Center, Attendance, EmergencyAlert, Notification
 
 
 @admin.register(Center)
@@ -16,8 +16,15 @@ class AttendanceAdmin(admin.ModelAdmin):
     search_fields = ('staff__full_name', 'staff__email', 'center__center_name')
 
 
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('staff', 'notification_type', 'message', 'is_read', 'created_at')
+    list_filter = ('notification_type', 'is_read', 'created_at')
+    search_fields = ('staff__full_name', 'message')
+
+
 @admin.register(EmergencyAlert)
 class EmergencyAlertAdmin(admin.ModelAdmin):
-    list_display = ('staff', 'center', 'priority', 'status', 'created_at', 'resolved_at')
-    list_filter = ('priority', 'status', 'created_at')
-    search_fields = ('staff__full_name', 'staff__email', 'center__center_name')
+    list_display = ('staff', 'assigned_center', 'status', 'created_at', 'resolved_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('staff__full_name', 'staff__email', 'assigned_center__center_name')

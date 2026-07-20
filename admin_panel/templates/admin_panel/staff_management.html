@@ -69,14 +69,14 @@
 
         <div class="topbar-right">
 
-          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+          <a href="{% url 'admin_notifications' %}" class="topbar-icon-btn position-relative" title="Notifications">
             <i class="bi bi-bell-fill"></i>
-            <span class="badge-count">3</span>
-          </button>
+            <span class="badge-count">{{ unread_notifications_count }}</span>
+          </a>
 
           <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
             <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-            <span class="badge-count" style="background:#EF4444;">2</span>
+            <span class="badge-count" style="background:#EF4444;">{{ emergency_alerts_count|default:"0" }}</span>
           </a>
 
           <div class="topbar-separator"></div>
@@ -90,10 +90,10 @@
 
           <div class="dropdown">
             <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="profile-avatar">AD</div>
+              <div class="profile-avatar">{{ user_initials|default:"AD" }}</div>
               <div class="profile-info d-none d-md-block">
-                <span class="profile-name">Admin</span>
-                <span class="profile-role">Administrator</span>
+                <span class="profile-name">{{ user.get_full_name|default:"Admin" }}</span>
+                <span class="profile-role">{{ user_role|default:"Administrator" }}</span>
               </div>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
@@ -130,11 +130,9 @@
             <div class="sm-select-wrap">
               <select id="centerFilter" class="sm-select">
                 <option value="">All Centers</option>
-                <option>Center 1</option>
-                <option>Center 2</option>
-                <option>Center 3</option>
-                <option>Center 4</option>
-                <option>Center 5</option>
+                {% for center in centers_list %}
+                <option value="{{ center.id }}">{{ center.center_name }}</option>
+                {% endfor %}
               </select>
               <i class="bi bi-chevron-down sm-select-chevron"></i>
             </div>
@@ -146,7 +144,9 @@
             <table class="sm-table" id="staffTable">
               <thead>
                 <tr>
+                  <th>Picture</th>
                   <th>Name</th>
+                  <th>Username</th>
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Center</th>
@@ -155,112 +155,49 @@
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>
-                    <div class="sm-name-cell">
-                      <span class="sm-avatar" style="background:#E3F3EC;color:#1F5C40;">AH</span>
-                      <span class="sm-name">Ali Hassan</span>
-                    </div>
-                  </td>
-                  <td class="sm-cell-muted">ali@example.com</td>
-                  <td class="sm-cell-muted">0300-1234567</td>
-                  <td><span class="sm-center-tag">Center 5</span></td>
-                  <td><span class="sm-badge sm-badge-active"><i class="bi bi-circle-fill"></i> Active</span></td>
-                  <td class="sm-actions-cell">
-                    <button class="sm-action-btn sm-action-edit" data-action="edit" title="Edit" aria-label="Edit Ali Hassan">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="sm-action-btn sm-action-delete" data-action="delete" title="Delete" aria-label="Delete Ali Hassan">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="sm-name-cell">
-                      <span class="sm-avatar" style="background:#DBEAFE;color:#2563EB;">SK</span>
-                      <span class="sm-name">Sara Khan</span>
-                    </div>
-                  </td>
-                  <td class="sm-cell-muted">sara@example.com</td>
-                  <td class="sm-cell-muted">0300-2345678</td>
-                  <td><span class="sm-center-tag">Center 2</span></td>
-                  <td><span class="sm-badge sm-badge-active"><i class="bi bi-circle-fill"></i> Active</span></td>
-                  <td class="sm-actions-cell">
-                    <button class="sm-action-btn sm-action-edit" data-action="edit" title="Edit" aria-label="Edit Sara Khan">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="sm-action-btn sm-action-delete" data-action="delete" title="Delete" aria-label="Delete Sara Khan">
-                      <i class="bi bi-trash"></i>
-                    </button>
+                {% if staff_list %}
+                  {% for s in staff_list %}
+                   <tr data-id="{{ s.id }}">
+                    <td>
+                      <div class="sm-name-cell">
+                        {% if s.profile_photo %}
+                        <img src="{{ s.profile_photo.url }}" alt="{{ s.user.full_name }}" class="sm-avatar-img" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                        {% else %}
+                        <span class="sm-avatar" style="background:#E3F3EC;color:#1F5C40;">{{ s.user.full_name|first|upper }}</span>
+                        {% endif %}
+                      </div>
+                    </td>
+                    <td><span class="sm-name">{{ s.user.full_name }}</span></td>
+                    <td class="sm-cell-muted">{{ s.user.username }}</td>
+                    <td class="sm-cell-muted">{{ s.user.email }}</td>
+                    <td class="sm-cell-muted">{{ s.user.phone_number }}</td>
+                    <td><span class="sm-center-tag">{{ s.assigned_center.center_name|default:"--" }}</span></td>
+                    <td><span class="sm-badge sm-badge-{{ s.status|lower }}"><i class="bi bi-circle-fill"></i> {{ s.status }}</span></td>
+                    <td class="sm-actions-cell">
+                      <button class="sm-action-btn sm-action-edit" data-action="edit" title="Edit" aria-label="Edit {{ s.user.full_name }}">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="sm-action-btn sm-action-delete" data-action="delete" title="Delete" aria-label="Delete {{ s.user.full_name }}">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                <tr class="empty-row">
+                  <td colspan="8" class="text-center py-5 text-muted empty-state-cell">
+                    <i class="bi bi-people fs-1 d-block mb-3"></i>
+                    <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No staff members found.</h6>
+                    <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Click 'Add Staff' to create the first staff member.</p>
                   </td>
                 </tr>
-                <tr>
-                  <td>
-                    <div class="sm-name-cell">
-                      <span class="sm-avatar" style="background:#FEF3C7;color:#B8860B;">UT</span>
-                      <span class="sm-name">Usman Tariq</span>
-                    </div>
-                  </td>
-                  <td class="sm-cell-muted">usman@example.com</td>
-                  <td class="sm-cell-muted">0300-3456789</td>
-                  <td><span class="sm-center-tag">Center 1</span></td>
-                  <td><span class="sm-badge sm-badge-active"><i class="bi bi-circle-fill"></i> Active</span></td>
-                  <td class="sm-actions-cell">
-                    <button class="sm-action-btn sm-action-edit" data-action="edit" title="Edit" aria-label="Edit Usman Tariq">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="sm-action-btn sm-action-delete" data-action="delete" title="Delete" aria-label="Delete Usman Tariq">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="sm-name-cell">
-                      <span class="sm-avatar" style="background:#FBE6E4;color:#C0392B;">NF</span>
-                      <span class="sm-name">Nida Fatima</span>
-                    </div>
-                  </td>
-                  <td class="sm-cell-muted">nida@example.com</td>
-                  <td class="sm-cell-muted">0300-4567800</td>
-                  <td><span class="sm-center-tag">Center 3</span></td>
-                  <td><span class="sm-badge sm-badge-inactive"><i class="bi bi-circle-fill"></i> Inactive</span></td>
-                  <td class="sm-actions-cell">
-                    <button class="sm-action-btn sm-action-edit" data-action="edit" title="Edit" aria-label="Edit Nida Fatima">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="sm-action-btn sm-action-delete" data-action="delete" title="Delete" aria-label="Delete Nida Fatima">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="sm-name-cell">
-                      <span class="sm-avatar" style="background:#E3F3EC;color:#1F5C40;">BA</span>
-                      <span class="sm-name">Bilal Ahmed</span>
-                    </div>
-                  </td>
-                  <td class="sm-cell-muted">bilal@example.com</td>
-                  <td class="sm-cell-muted">0300-5678901</td>
-                  <td><span class="sm-center-tag">Center 4</span></td>
-                  <td><span class="sm-badge sm-badge-active"><i class="bi bi-circle-fill"></i> Active</span></td>
-                  <td class="sm-actions-cell">
-                    <button class="sm-action-btn sm-action-edit" data-action="edit" title="Edit" aria-label="Edit Bilal Ahmed">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="sm-action-btn sm-action-delete" data-action="delete" title="Delete" aria-label="Delete Bilal Ahmed">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
 
           <div class="sm-table-footer">
-            <span class="sm-footer-info">Showing 5 of 5 staff members</span>
+            <span class="sm-footer-info">Showing {{ staff_count|default:"0" }} of {{ total_staff|default:"0" }} staff members</span>
             <nav class="sm-pagination">
               <button class="sm-page-btn disabled" disabled aria-label="Previous page">
                 <i class="bi bi-chevron-left"></i>
@@ -280,6 +217,229 @@
   </div>
 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="modal fade" id="addStaffModal" tabindex="-1" aria-labelledby="addStaffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content as-modal-content">
+
+        <div class="modal-header as-modal-header">
+          <div class="as-modal-title-wrap">
+            <span class="as-modal-icon"><i class="bi bi-person-plus-fill"></i></span>
+            <h5 class="modal-title fw-semibold as-modal-title" id="addStaffModalLabel">Add Staff</h5>
+          </div>
+          <button type="button" class="btn-close as-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body as-modal-body">
+          <form id="addStaffForm" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <input type="hidden" name="staff_id" id="id_staff_id" value="">
+            <input type="hidden" name="age" id="id_age" value="">
+
+            <div id="formErrors" class="alert alert-danger d-none as-alert"></div>
+
+            <div class="as-section">
+              <div class="as-section-heading">
+                <span class="as-section-icon">👤</span>
+                <span>Personal Information</span>
+              </div>
+
+              <div class="row g-4">
+                <div class="col-lg-4 col-md-5 col-12">
+                  <div class="as-photo-wrap">
+                    <label class="as-label">Profile Picture</label>
+                    <div class="as-photo-card" id="photoCard">
+                      <div class="as-photo-preview" id="photoPreview">
+                        <i class="bi bi-cloud-arrow-up as-photo-icon"></i>
+                        <span class="as-photo-text">JPG / PNG</span>
+                        <span class="as-photo-limit">Maximum 2 MB</span>
+                      </div>
+                      <input type="file" name="profile_picture" id="id_profile_picture" accept="image/jpeg,image/png">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-lg-8 col-md-7 col-12">
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <div class="as-field">
+                        <label class="as-label" for="id_full_name">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="full_name" id="id_full_name" class="as-input" placeholder="Enter full name" required minlength="3">
+                      </div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                      <div class="as-field">
+                        <label class="as-label" for="id_email">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" id="id_email" class="as-input" placeholder="Enter email address" required>
+                      </div>
+                    </div>
+                    <div class="col-md-6 col-12">
+                      <div class="as-field">
+                        <label class="as-label" for="id_phone_number">Phone Number <span class="text-danger">*</span></label>
+                        <input type="text" name="phone_number" id="id_phone_number" class="as-input" placeholder="03XXXXXXXXX" required minlength="11" maxlength="11">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-2">
+                <div class="col-md-4 col-sm-6 col-12">
+                  <div class="as-field">
+                    <label class="as-label" for="id_cnic">CNIC <span class="text-danger">*</span></label>
+                    <input type="text" name="cnic" id="id_cnic" class="as-input" placeholder="xxxxx-xxxxxxx-x" required minlength="15" maxlength="15">
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6 col-12">
+                  <div class="as-field">
+                    <label class="as-label" for="id_date_of_birth">Date of Birth <span class="text-danger">*</span></label>
+                    {{ form.date_of_birth }}
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-6 col-12">
+                  <div class="as-field">
+                    <label class="as-label">Age</label>
+                    <div class="as-age-display" id="ageDisplay">
+                      <span class="as-age-value" id="ageValue">--</span>
+                      <span class="as-age-unit" id="ageUnit">Years</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3 mt-2">
+                <div class="col-md-4 col-sm-6 col-12">
+                  <div class="as-field">
+                    <label class="as-label" for="id_gender">Gender <span class="text-danger">*</span></label>
+                    <div class="as-select-wrap">
+                      <select name="gender" id="id_gender" class="as-input as-select" required>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <i class="bi bi-chevron-down as-select-arrow"></i>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-8 col-sm-6 col-12">
+                  <div class="as-field">
+                    <label class="as-label" for="id_address">Address <span class="text-danger">*</span></label>
+                    <textarea name="address" id="id_address" class="as-input as-textarea" rows="2" placeholder="Enter full address" required minlength="10"></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="as-section">
+              <div class="as-section-heading">
+                <span class="as-section-icon">🏢</span>
+                <span>Work Information</span>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6 col-12">
+                  <div class="as-field">
+                    <label class="as-label" for="id_assigned_center">Assigned Center <span class="text-danger">*</span></label>
+                    <div class="as-select-wrap">
+                      <select name="assigned_center" id="id_assigned_center" class="as-input as-select" required>
+                        <option value="">Select Center</option>
+                        {% for center in centers_list %}
+                        <option value="{{ center.id }}">{{ center.center_name }}</option>
+                        {% endfor %}
+                      </select>
+                      <i class="bi bi-chevron-down as-select-arrow"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <div class="modal-footer as-modal-footer">
+          <button type="button" class="as-btn as-btn-clear" id="clearFormBtn">
+            <i class="bi bi-eraser"></i> Clear
+          </button>
+          <button type="button" class="as-btn as-btn-cancel" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="button" class="as-btn as-btn-save" id="submitStaffBtn">
+            <i class="bi bi-save"></i>
+            <span id="submitBtnText">Save Staff</span>
+            <span id="submitBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="staffSuccessModal" tabindex="-1" aria-labelledby="staffSuccessModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content as-modal-content" style="max-width:420px;margin:0 auto;">
+        <div class="modal-body text-center as-success-body">
+          <div class="as-success-icon-wrap">
+            <i class="bi bi-check-circle-fill as-success-icon"></i>
+          </div>
+          <h5 class="as-success-title" id="successModalTitle">Staff Added Successfully</h5>
+          <div class="as-cred-box">
+            <div class="as-cred-row">
+              <span class="as-cred-label">Username</span>
+              <span class="as-cred-value" id="credUsername">--</span>
+            </div>
+            <div class="as-cred-divider"></div>
+            <div class="as-cred-row">
+              <span class="as-cred-label">Password</span>
+              <span class="as-cred-value" id="credPassword">--</span>
+            </div>
+          </div>
+          <div class="as-success-actions">
+            <button type="button" class="as-btn as-btn-copy" id="copyCredBtn">
+              <i class="bi bi-clipboard"></i> Copy Credentials
+            </button>
+            <button type="button" class="as-btn as-btn-close-success" data-bs-dismiss="modal">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content" style="border:none;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+        <div class="modal-body text-center" style="padding:2rem 1.75rem;">
+          <div class="mb-3">
+            <span style="display:inline-flex;width:56px;height:56px;border-radius:50%;background:#FEE2E2;align-items:center;justify-content:center;">
+              <i class="bi bi-exclamation-triangle-fill" style="font-size:1.5rem;color:#EF4444;"></i>
+            </span>
+          </div>
+          <h5 class="fw-semibold mb-1" style="color:#1F2937;">Delete Staff</h5>
+          <p class="text-muted mb-3" style="font-size:0.875rem;">Are you sure you want to delete <strong id="deleteStaffName">this staff member</strong>? This action cannot be undone.</p>
+          <input type="hidden" id="deleteStaffId" value="">
+          <div class="d-flex gap-2 justify-content-center">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius:10px;padding:0.5rem 1.5rem;font-weight:500;">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn" style="border-radius:10px;padding:0.5rem 1.5rem;font-weight:500;">
+              <span id="deleteBtnText">Delete</span>
+              <span id="deleteBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="position-fixed top-0 end-0 p-3" style="z-index:9999;">
+    <div id="liveToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius:12px;">
+      <div class="d-flex">
+        <div class="toast-body" id="toastMessage" style="font-size:0.875rem;font-weight:500;"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 

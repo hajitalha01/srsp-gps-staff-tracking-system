@@ -562,29 +562,141 @@
   .rp-metrics-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+  .rp-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .rp-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .rp-stat-value {
+    font-size: 0.9rem;
+  }
+  .rp-stat-label {
+    font-size: 0.65rem;
+  }
+  .rp-stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 0.95rem;
+  }
 }
 
 @media (max-width: 767.98px) {
+  .rp-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rp-page-title {
+    font-size: 1.125rem;
+  }
+
+  .rp-page-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .rp-header-right {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .rp-search-wrap {
+    width: 100%;
+  }
+
+  .rp-search-input {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.9375rem;
+  }
+
+  .rp-datetime {
+    font-size: 0.78rem;
+  }
+
   .rp-left-col {
     grid-template-columns: 1fr;
   }
+
+  .rp-teacher-card,
+  .rp-center-card {
+    margin-bottom: 0;
+  }
+
   .rp-bottom-charts,
   .rp-bottom-cards {
     grid-template-columns: 1fr;
   }
+
   .rp-metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .rp-page-header {
-    flex-direction: column;
+
+  .rp-stat-card {
+    padding: 0.85rem 0.65rem;
   }
-  .rp-search-input {
+
+  .rp-stat-value {
+    font-size: 0.9rem;
+  }
+
+  .rp-stat-label {
+    font-size: 0.65rem;
+  }
+
+  .rp-stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .rp-table thead th,
+  .rp-table tbody td {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.72rem;
+  }
+
+  .rp-btn {
     width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 0.875rem;
+  }
+
+  .rp-action-buttons {
+    gap: 0.5rem;
+  }
+
+  .rp-emergency-card,
+  .rp-activity-card {
+    padding: 1rem;
+  }
+
+  .rp-card {
+    padding: 1rem;
+  }
+
+  .rp-card-title {
+    font-size: 0.875rem;
+  }
+
+  .rp-analytics-grid {
+    gap: 1rem;
+  }
+
+  .rp-chart-placeholder {
+    min-height: 130px;
   }
 }
 
 @media (max-width: 575.98px) {
   .rp-metrics-grid {
     grid-template-columns: 1fr 1fr;
+  }
+  .rp-stat-card {
+    padding: 0.75rem 0.6rem;
   }
 }

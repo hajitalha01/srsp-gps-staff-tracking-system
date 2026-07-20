@@ -74,7 +74,7 @@
           </button>
           <div class="topbar-title">
             <h4>Dashboard</h4>
-            <p>Welcome back, Admin</p>
+            <p>Welcome back, {{ user.get_full_name|default:"Admin" }}</p>
           </div>
         </div>
 
@@ -84,13 +84,13 @@
           <!-- Notification Bell -->
           <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
             <i class="bi bi-bell-fill"></i>
-            <span class="badge-count">3</span>
+            <span class="badge-count">{{ unread_notifications_count|default:"0" }}</span>
           </button>
 
           <!-- Emergency Alert -->
           <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
             <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-            <span class="badge-count" style="background:#EF4444;">2</span>
+            <span class="badge-count" style="background:#EF4444;">{{ emergency_alerts_count|default:"0" }}</span>
           </a>
 
           <!-- Separator -->
@@ -108,10 +108,10 @@
           <!-- Profile -->
           <div class="dropdown">
             <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="profile-avatar">AD</div>
+              <div class="profile-avatar">{{ user_initials|default:"AD" }}</div>
               <div class="profile-info d-none d-md-block">
-                <span class="profile-name">Admin</span>
-                <span class="profile-role">Administrator</span>
+                <span class="profile-name">{{ user.get_full_name|default:"Admin" }}</span>
+                <span class="profile-role">{{ user_role|default:"Administrator" }}</span>
               </div>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
@@ -141,8 +141,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Total Staff</span>
-                <h3 class="stat-value">128</h3>
-                <span class="stat-subtitle">Active field workers</span>
+                <h3 class="stat-value">{{ total_staff|default:"0" }}</h3>
+                <span class="stat-subtitle">{{ total_staff_subtitle|default:"Active field workers" }}</span>
               </div>
             </div>
           </div>
@@ -155,8 +155,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Present Today</span>
-                <h3 class="stat-value">94</h3>
-                <span class="stat-subtitle">73% attendance rate</span>
+                <h3 class="stat-value">{{ present_today|default:"0" }}</h3>
+                <span class="stat-subtitle">{{ attendance_rate|default:"--" }} attendance rate</span>
               </div>
             </div>
           </div>
@@ -169,8 +169,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Absent Today</span>
-                <h3 class="stat-value">34</h3>
-                <span class="stat-subtitle">27% absent rate</span>
+                <h3 class="stat-value">{{ absent_today|default:"0" }}</h3>
+                <span class="stat-subtitle">{{ absent_rate|default:"--" }} absent rate</span>
               </div>
             </div>
           </div>
@@ -183,8 +183,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Emergency Alerts</span>
-                <h3 class="stat-value">2</h3>
-                <span class="stat-subtitle">Requires attention</span>
+                <h3 class="stat-value">{{ emergency_count|default:"0" }}</h3>
+                <span class="stat-subtitle">{{ emergency_subtitle|default:"Requires attention" }}</span>
               </div>
             </div>
           </div>
@@ -196,13 +196,13 @@
         <div class="row g-4">
 
           <!-- Table 1: Present Staff -->
-          <div class="col-lg-6">
+          <div class="col-lg-6 col-md-6">
             <div class="table-card">
               <div class="table-card-header">
                 <div class="d-flex align-items-center gap-2">
                   <div class="table-title-icon bg-green"><i class="bi bi-check-lg"></i></div>
                   <h5 class="mb-0">Present Today</h5>
-                  <span class="table-count">94</span>
+                  <span class="table-count">{{ present_today|default:"0" }}</span>
                 </div>
                 <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-primary">View All</a>
               </div>
@@ -217,44 +217,10 @@
                   </thead>
                   <tbody>
                     <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">AK</span>
-                          <span>Ahmed Khan</span>
-                        </div>
+                      <td colspan="3" class="text-center py-4 text-muted empty-state-cell">
+                        <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                        No attendance records available.
                       </td>
-                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
-                      <td>08:01 AM</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">FH</span>
-                          <span>Fatima Hassan</span>
-                        </div>
-                      </td>
-                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
-                      <td>07:45 AM</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">MR</span>
-                          <span>Muhammad Riaz</span>
-                        </div>
-                      </td>
-                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
-                      <td>08:15 AM</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#E3F3EC;color:#1F5C40;">SN</span>
-                          <span>Sana Noor</span>
-                        </div>
-                      </td>
-                      <td><span class="status-badge present"><i class="bi bi-circle-fill"></i> Present</span></td>
-                      <td>07:55 AM</td>
                     </tr>
                   </tbody>
                 </table>
@@ -263,13 +229,13 @@
           </div>
 
           <!-- Table 2: Absent Staff -->
-          <div class="col-lg-6">
+          <div class="col-lg-6 col-md-6">
             <div class="table-card">
               <div class="table-card-header">
                 <div class="d-flex align-items-center gap-2">
                   <div class="table-title-icon bg-red"><i class="bi bi-x-lg"></i></div>
                   <h5 class="mb-0">Absent Today</h5>
-                  <span class="table-count" style="background:#FBE6E4;color:#C0392B;">34</span>
+                  <span class="table-count" style="background:#FBE6E4;color:#C0392B;">{{ absent_today|default:"0" }}</span>
                 </div>
                 <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-primary">View All</a>
               </div>
@@ -284,44 +250,10 @@
                   </thead>
                   <tbody>
                     <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">UI</span>
-                          <span>Usman Iqbal</span>
-                        </div>
+                      <td colspan="3" class="text-center py-4 text-muted empty-state-cell">
+                        <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                        No attendance records available.
                       </td>
-                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
-                      <td>--:-- --</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">ZN</span>
-                          <span>Zainab Niazi</span>
-                        </div>
-                      </td>
-                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
-                      <td>--:-- --</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">BA</span>
-                          <span>Bilal Ahmed</span>
-                        </div>
-                      </td>
-                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
-                      <td>--:-- --</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="staff-cell">
-                          <span class="staff-avatar" style="background:#FBE6E4;color:#C0392B;">AJ</span>
-                          <span>Aisha Jamil</span>
-                        </div>
-                      </td>
-                      <td><span class="status-badge absent"><i class="bi bi-circle-fill"></i> Absent</span></td>
-                      <td>--:-- --</td>
                     </tr>
                   </tbody>
                 </table>

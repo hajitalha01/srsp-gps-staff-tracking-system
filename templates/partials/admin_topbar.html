@@ -58,6 +58,7 @@
   <div class="topbar-right">
 
     <!-- Notification Bell -->
+    {% with unread=unread_notifications_count|default:0 %}
     <button class="topbar-icon-btn position-relative"
             type="button"
             data-bs-toggle="dropdown"
@@ -65,27 +66,36 @@
             aria-label="Notifications"
             title="Notifications">
       <i class="fas fa-bell" aria-hidden="true"></i>
+      {% if unread > 0 %}
       <span class="badge-count"
             style="background:var(--text-danger);color:#fff"
-            aria-label="3 unread notifications">3</span>
+            aria-label="{{ unread }} unread notifications">{{ unread }}</span>
+      {% endif %}
     </button>
     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-0"
         style="width:300px;border-radius:var(--radius-lg);overflow:hidden">
       <li class="dropdown-header fw-semibold px-3 py-2"
           style="background:var(--surface-3);font-size:0.8125rem">Notifications</li>
-      <li><a class="dropdown-item d-flex align-items-start gap-2 py-2 px-3" href="#" style="font-size:0.8125rem">
-        <i class="fas fa-calendar-check mt-1 flex-shrink-0" style="color:var(--text-success);font-size:0.875rem"></i>
-        <span>Ali Hassan checked in at Center 5<br><small class="text-muted">Today, 8:01 AM</small></span>
-      </a></li>
-      <li><a class="dropdown-item d-flex align-items-start gap-2 py-2 px-3" href="#" style="font-size:0.8125rem">
-        <i class="fas fa-exclamation-triangle mt-1 flex-shrink-0" style="color:var(--text-danger);font-size:0.875rem"></i>
-        <span>New emergency alert from Ali Hassan<br><small class="text-muted">Today, 10:15 AM</small></span>
-      </a></li>
-      <li><hr class="dropdown-divider my-0"></li>
-      <li><a href="{% url 'admin_notifications' %}" class="dropdown-item text-center py-2" style="font-size:0.8125rem;color:var(--srsp-accent)">
-        View all notifications
-      </a></li>
+        {% if notifications %}
+          {% for n in notifications %}
+          <li><a class="dropdown-item d-flex align-items-start gap-2 py-2 px-3" href="{% url 'admin_notifications' %}" style="font-size:0.8125rem">
+            <i class="fas {% if n.notification_type == 'emergency' %}fa-exclamation-triangle{% elif n.notification_type == 'attendance' %}fa-calendar-check{% else %}fa-info-circle{% endif %} mt-1 flex-shrink-0" style="color:var(--text-{% if n.notification_type == 'emergency' %}danger{% elif n.notification_type == 'attendance' %}success{% else %}accent{% endif %});font-size:0.875rem"></i>
+            <span>{{ n.message|truncatechars:50 }}<br><small class="text-muted">{{ n.created_at|timesince }} ago</small></span>
+          </a></li>
+          {% endfor %}
+          <li><hr class="dropdown-divider my-0"></li>
+          <li><a href="{% url 'admin_notifications' %}" class="dropdown-item text-center py-2" style="font-size:0.8125rem;color:var(--srsp-accent)">
+            View all notifications ({{ notifications|length }})
+          </a></li>
+        {% else %}
+          <li><span class="dropdown-item-text text-center py-3 text-muted" style="font-size:0.8125rem">No new notifications</span></li>
+          <li><hr class="dropdown-divider my-0"></li>
+          <li><a href="{% url 'admin_notifications' %}" class="dropdown-item text-center py-2" style="font-size:0.8125rem;color:var(--srsp-accent)">
+            Notifications settings
+          </a></li>
+        {% endif %}
     </ul>
+    {% endwith %}
 
     <!-- Emergency Alert -->
     <a href="{% url 'admin_alerts' %}"
@@ -95,7 +105,7 @@
       <i class="fas fa-exclamation-triangle" aria-hidden="true" style="color:var(--text-danger)"></i>
       <span class="badge-count"
             style="background:var(--text-danger);color:#fff"
-            aria-label="1 active emergency">1</span>
+            aria-label="{{ emergency_alerts_count }} active emergencies">{{ emergency_alerts_count|default:"0" }}</span>
     </a>
 
     <!-- Separator -->

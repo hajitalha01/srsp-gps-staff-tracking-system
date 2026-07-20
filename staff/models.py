@@ -1,11 +1,17 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class StaffProfile(models.Model):
     class Status(models.TextChoices):
         ACTIVE = 'Active', 'Active'
         INACTIVE = 'Inactive', 'Inactive'
+
+    class Gender(models.TextChoices):
+        MALE = 'Male', 'Male'
+        FEMALE = 'Female', 'Female'
+        OTHER = 'Other', 'Other'
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -20,8 +26,15 @@ class StaffProfile(models.Model):
     )
     designation = models.CharField(max_length=100, blank=True)
     profile_photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
+    cnic = models.CharField(max_length=15, unique=True, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    age = models.PositiveSmallIntegerField(blank=True, null=True)
+    gender = models.CharField(max_length=10, choices=Gender.choices, blank=True)
+    address = models.TextField(blank=True)
     joining_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['user__full_name']

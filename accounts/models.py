@@ -26,6 +26,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         FIELD_STAFF = 'Field Staff', 'Field Staff'
         TEACHER = 'Teacher', 'Teacher'
 
+    username = models.CharField(max_length=20, unique=True, blank=True, null=True)
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, unique=True)
@@ -39,6 +40,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['full_name', 'phone_number']
+
+    def get_full_name(self):
+        return self.full_name
+
+    def get_short_name(self):
+        return self.full_name.split()[0] if self.full_name else ''
+
+    def get_initials(self):
+        if not self.full_name:
+            return 'AK'
+        parts = self.full_name.strip().split()
+        if len(parts) >= 2:
+            return (parts[0][0] + parts[-1][0]).upper()
+        return parts[0][0].upper() if parts[0] else 'AK'
 
     def __str__(self):
         return self.full_name

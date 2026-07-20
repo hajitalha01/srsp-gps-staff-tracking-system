@@ -69,14 +69,14 @@
 
         <div class="topbar-right">
 
-          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+          <a href="{% url 'admin_notifications' %}" class="topbar-icon-btn position-relative" title="Notifications">
             <i class="bi bi-bell-fill"></i>
-            <span class="badge-count">3</span>
-          </button>
+            <span class="badge-count">{{ unread_notifications_count }}</span>
+          </a>
 
           <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
             <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-            <span class="badge-count" style="background:#EF4444;">2</span>
+            <span class="badge-count" style="background:#EF4444;">{{ emergency_alerts_count|default:"0" }}</span>
           </a>
 
           <div class="topbar-separator"></div>
@@ -90,10 +90,10 @@
 
           <div class="dropdown">
             <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="profile-avatar">AD</div>
+              <div class="profile-avatar">{{ user_initials|default:"AD" }}</div>
               <div class="profile-info d-none d-md-block">
-                <span class="profile-name">Admin</span>
-                <span class="profile-role">Administrator</span>
+                <span class="profile-name">{{ user.get_full_name|default:"Admin" }}</span>
+                <span class="profile-role">{{ user_role|default:"Administrator" }}</span>
               </div>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
@@ -128,27 +128,27 @@
               <div class="row g-3 mb-4">
                 <div class="col-md-6">
                   <label class="pf-label">Full Name</label>
-                  <input type="text" class="pf-input" value="Aisha Khan" placeholder="Enter full name">
+                  <input type="text" class="pf-input" value="{{ user.get_full_name|default:"" }}" placeholder="Enter full name">
                 </div>
                 <div class="col-md-6">
                   <label class="pf-label">Phone Number</label>
-                  <input type="text" class="pf-input" value="+92 300 1234567" placeholder="Enter phone number">
+                  <input type="text" class="pf-input" value="{{ admin.phone|default:"" }}" placeholder="Enter phone number">
                 </div>
                 <div class="col-md-6">
                   <label class="pf-label">Email Address</label>
-                  <input type="email" class="pf-input" value="aisha@srsp.org.pk" placeholder="Enter email address">
+                  <input type="email" class="pf-input" value="{{ user.email|default:"" }}" placeholder="Enter email address">
                 </div>
                 <div class="col-md-6">
                   <label class="pf-label">Assigned Learning Center</label>
-                  <input type="text" class="pf-input" value="Gulshan Colony Center" placeholder="Enter center name">
+                  <input type="text" class="pf-input" value="{{ admin.assigned_center|default:"" }}" placeholder="Enter center name">
                 </div>
                 <div class="col-md-6">
                   <label class="pf-label">Role</label>
-                  <input type="text" class="pf-input" value="Admin" placeholder="Enter role" readonly style="background:var(--gray-50,#F9FAFB);color:var(--gray-500,#6B7280);cursor:not-allowed;">
+                  <input type="text" class="pf-input" value="{{ user_role|default:"" }}" placeholder="Enter role" readonly style="background:var(--gray-50,#F9FAFB);color:var(--gray-500,#6B7280);cursor:not-allowed;">
                 </div>
                 <div class="col-md-6">
                   <label class="pf-label">Username</label>
-                  <input type="text" class="pf-input" value="aisha_khan" placeholder="Enter username">
+                  <input type="text" class="pf-input" value="{{ user.username|default:"" }}" placeholder="Enter username">
                 </div>
               </div>
 
@@ -182,7 +182,7 @@
 
               <div class="pf-photo-wrap">
                 <div class="pf-avatar">
-                  <span>AK</span>
+                  <span>{{ user_initials|default:"--" }}</span>
                   <div class="pf-camera-overlay">
                     <i class="bi bi-camera-fill"></i>
                   </div>

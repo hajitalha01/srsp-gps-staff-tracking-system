@@ -1,104 +1,141 @@
-/**
- * Reports & Analytics — JavaScript
- */
-
 (function () {
   'use strict';
 
-  /* ---------- live date/time in header ---------- */
+  // --- live date/time in header ---
   function updateDateTime() {
-    const el = document.getElementById('rpCurrentDateTime');
+    var el = document.getElementById('rpCurrentDateTime');
     if (!el) return;
-    const now = new Date();
-    const opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    var now = new Date();
+    var opts = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     el.textContent = now.toLocaleDateString('en-US', opts);
   }
   updateDateTime();
   setInterval(updateDateTime, 30000);
 
-  /* ---------- teacher search (filter table) ---------- */
-  let searchTimeout = null;
-  const searchInput = document.querySelector('.rp-search-input');
-  const table = document.getElementById('reportsTable');
+  // --- Charts ---
+  function initCharts() {
+    var el = document.getElementById('chartData');
+    if (!el) return;
+    var data;
+    try { data = JSON.parse(el.textContent); } catch (e) { return; }
 
-  if (searchInput && table) {
+    var colors = {
+      green: '#22C55E',
+      red: '#EF4444',
+      blue: '#3B82F6',
+      orange: '#F97316',
+      purple: '#8B5CF6',
+      gray: '#6B7280',
+      lightGreen: '#DCFCE7',
+      lightRed: '#FEE2E2',
+      lightBlue: '#DBEAFE',
+    };
+
+    // 1. Monthly Attendance Trend (Line)
+    var ctx1 = document.getElementById('chartMonthlyTrend');
+    if (ctx1 && data.monthly && data.monthly.length) {
+      new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: data.monthly.map(function (m) { return m.month; }),
+          datasets: [
+            { label: 'Present', data: data.monthly.map(function (m) { return m.present; }), borderColor: colors.green, backgroundColor: colors.green + '33', tension: 0.3, fill: true },
+            { label: 'Absent', data: data.monthly.map(function (m) { return m.absent; }), borderColor: colors.red, backgroundColor: colors.red + '33', tension: 0.3, fill: true },
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } } },
+      });
+    }
+
+    // 2. Present vs Absent (Pie)
+    var ctx2 = document.getElementById('chartPie');
+    if (ctx2) {
+      new Chart(ctx2, {
+        type: 'pie',
+        data: {
+          labels: ['Present', 'Absent'],
+          datasets: [{ data: [data.piePresent, data.pieAbsent], backgroundColor: [colors.green, colors.red], borderWidth: 0 }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } } },
+      });
+    }
+
+    // 3. Center-wise Staff Distribution (Bar)
+    var ctx3 = document.getElementById('chartCenterStaff');
+    if (ctx3 && data.centerStaff && data.centerStaff.length) {
+      new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: data.centerStaff.map(function (c) { return c.center; }),
+          datasets: [{ label: 'Staff', data: data.centerStaff.map(function (c) { return c.count; }), backgroundColor: colors.green + '99', borderColor: colors.green, borderWidth: 1, borderRadius: 4 }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } } },
+      });
+    }
+
+    // 4. District-wise Staff (Bar)
+    var ctx4 = document.getElementById('chartDistrictStaff');
+    if (ctx4 && data.districtStaff && data.districtStaff.length) {
+      new Chart(ctx4, {
+        type: 'bar',
+        data: {
+          labels: data.districtStaff.map(function (d) { return d.district; }),
+          datasets: [{ label: 'Staff', data: data.districtStaff.map(function (d) { return d.count; }), backgroundColor: colors.blue + '99', borderColor: colors.blue, borderWidth: 1, borderRadius: 4 }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } } },
+      });
+    }
+
+    // 5. Emergency Alerts Trend (Line)
+    var ctx5 = document.getElementById('chartEmgTrend');
+    if (ctx5 && data.emgTrend && data.emgTrend.length) {
+      new Chart(ctx5, {
+        type: 'line',
+        data: {
+          labels: data.emgTrend.map(function (e) { return e.date; }),
+          datasets: [{ label: 'Alerts', data: data.emgTrend.map(function (e) { return e.count; }), borderColor: colors.red, backgroundColor: colors.red + '33', tension: 0.3, fill: true, pointBackgroundColor: colors.red }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } } },
+      });
+    }
+
+    // 6. Attendance % by Center (Horizontal Bar)
+    var ctx6 = document.getElementById('chartAttByCenter');
+    if (ctx6 && data.attByCenter && data.attByCenter.length) {
+      new Chart(ctx6, {
+        type: 'bar',
+        data: {
+          labels: data.attByCenter.map(function (a) { return a.center; }),
+          datasets: [{ label: 'Attendance %', data: data.attByCenter.map(function (a) { return a.pct; }), backgroundColor: colors.purple + '99', borderColor: colors.purple, borderWidth: 1, borderRadius: 4 }],
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, y: { grid: { display: false } } } },
+      });
+    }
+  }
+
+  initCharts();
+
+  // --- Search via filter form ---
+  var searchInput = document.getElementById('reportSearch');
+  var filterForm = document.getElementById('reportFilterForm');
+  var filterSearchInput = document.getElementById('filterSearchInput');
+  if (searchInput && filterForm && filterSearchInput) {
+    var searchTimeout;
     searchInput.addEventListener('input', function () {
+      filterSearchInput.value = searchInput.value.trim();
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(function () {
-        const query = searchInput.value.toLowerCase().trim();
-        const rows = table.querySelectorAll('tbody tr');
-        rows.forEach(function (row) {
-          const cells = row.querySelectorAll('td');
-          let match = false;
-          for (let i = 0; i < cells.length; i++) {
-            if (cells[i].textContent.toLowerCase().includes(query)) {
-              match = true;
-              break;
-            }
-          }
-          row.style.display = match ? '' : 'none';
-        });
-      }, 300);
+        filterForm.submit();
+      }, 500);
     });
   }
 
-  /* ---------- report action buttons (toast feedback) ---------- */
-  function showToast(msg) {
-    const existing = document.querySelector('.rp-toast');
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.className = 'rp-toast';
-    toast.textContent = msg;
-    Object.assign(toast.style, {
-      position: 'fixed',
-      bottom: '24px',
-      right: '24px',
-      background: '#1F2937',
-      color: '#F9FAFB',
-      padding: '10px 20px',
-      borderRadius: '10px',
-      fontSize: '0.85rem',
-      fontWeight: '500',
-      boxShadow: '0 4px 16px rgba(0,0,0,.15)',
-      zIndex: '9999',
-      opacity: '0',
-      transform: 'translateY(12px)',
-      transition: 'opacity .3s ease, transform .3s ease',
-    });
-    document.body.appendChild(toast);
-
-    requestAnimationFrame(function () {
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(0)';
-    });
-
-    setTimeout(function () {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(12px)';
-      setTimeout(function () { toast.remove(); }, 350);
-    }, 2500);
-  }
-
-  document.querySelectorAll('.rp-btn-pdf, .rp-btn-excel, .rp-btn-print').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      if (btn.classList.contains('rp-btn-pdf')) {
-        showToast('PDF report downloaded');
-      } else if (btn.classList.contains('rp-btn-excel')) {
-        showToast('Excel export started');
-      } else if (btn.classList.contains('rp-btn-print')) {
-        window.print();
-      }
-    });
-  });
-
-  /* ---------- row highlight on click ---------- */
+  // --- Row highlight on click ---
+  var table = document.getElementById('reportsTable');
   if (table) {
     table.querySelectorAll('tbody tr').forEach(function (row) {
       row.addEventListener('click', function () {
-        table.querySelectorAll('tbody tr').forEach(function (r) {
-          r.style.background = '';
-        });
+        table.querySelectorAll('tbody tr').forEach(function (r) { r.style.background = ''; });
         row.style.background = '#F0FDF4';
       });
     });

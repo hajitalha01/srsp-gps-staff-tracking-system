@@ -1,29 +1,28 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-
-# ====================================================================
-# TEMPORARY DEVELOPMENT LOGIN
-# This is a simplified login for frontend/UI testing ONLY.
-# TODO: Remove this and replace with proper Django Authentication
-#       (authenticate, login, @login_required) before production.
-# ====================================================================
-
-CREDENTIALS = {
-    '12': {'password': '12', 'role': 'admin',  'redirect': 'admin_dashboard'},
-    '11': {'password': '11', 'role': 'staff',  'redirect': 'staff_home'},
-}
+from django.contrib.auth import authenticate, login
 
 
 def login_view(request):
     if request.method == 'POST':
-        username = request.POST.get('identifier')
-        password = request.POST.get('password')
+        identifier = request.POST.get('identifier', '').strip()
+        password = request.POST.get('password', '').strip()
 
-        if username in CREDENTIALS and CREDENTIALS[username]['password'] == password:
-            request.session['logged_in'] = True
-            request.session['user_role'] = CREDENTIALS[username]['role']
-            request.session['username'] = username
-            return redirect(CREDENTIALS[username]['redirect'])
+        user = authenticate(request, username=identifier, password=password)
+
+        if user is not None:
+            login(request, user)
+            role = user.role
+
+            if role == 'Admin':
+                request.session['user_role'] = 'admin'
+                return redirect('admin_dashboard')
+            elif role in ('Field Staff', 'Teacher'):
+                request.session['user_role'] = 'staff'
+                return redirect('staff_home')
+            else:
+                request.session['user_role'] = 'staff'
+                return redirect('staff_home')
 
         messages.error(request, 'Invalid Username or Password')
 
@@ -31,5 +30,7 @@ def login_view(request):
 
 
 def logout_view(request):
+    from django.contrib.auth import logout
+    logout(request)
     request.session.flush()
     return redirect('login')

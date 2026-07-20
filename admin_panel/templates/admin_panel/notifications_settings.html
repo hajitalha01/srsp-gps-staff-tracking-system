@@ -69,14 +69,14 @@
 
         <div class="topbar-right">
 
-          <button class="topbar-icon-btn position-relative" type="button" title="Notifications">
+          <a href="{% url 'admin_notifications' %}" class="topbar-icon-btn position-relative" title="Notifications">
             <i class="bi bi-bell-fill"></i>
-            <span class="badge-count">3</span>
-          </button>
+            <span class="badge-count">{{ unread_notifications_count }}</span>
+          </a>
 
           <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
             <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-            <span class="badge-count" style="background:#EF4444;">2</span>
+            <span class="badge-count" style="background:#EF4444;">{{ emergency_alerts_count|default:"0" }}</span>
           </a>
 
           <div class="topbar-separator"></div>
@@ -90,10 +90,10 @@
 
           <div class="dropdown">
             <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="profile-avatar">AD</div>
+              <div class="profile-avatar">{{ user_initials|default:"AD" }}</div>
               <div class="profile-info d-none d-md-block">
-                <span class="profile-name">Admin</span>
-                <span class="profile-role">Administrator</span>
+                <span class="profile-name">{{ user.get_full_name|default:"Admin" }}</span>
+                <span class="profile-role">{{ user_role|default:"Administrator" }}</span>
               </div>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
@@ -118,139 +118,35 @@
         </div>
 
         <div class="nt-card">
-
-          <div class="nt-row" data-type="attendance">
-            <div class="nt-icon nt-icon-green">
-              <i class="bi bi-calendar-check"></i>
+          {% if notifications %}
+            {% for n in notifications %}
+            <div class="nt-row {% if not n.is_read %}nt-row-unread{% endif %}">
+              <div class="nt-icon nt-icon-{{ n.notification_type|default:'info' }}">
+                {% if n.notification_type == 'emergency' %}
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                {% elif n.notification_type == 'attendance' %}
+                <i class="bi bi-calendar-check-fill"></i>
+                {% else %}
+                <i class="bi bi-info-circle-fill"></i>
+                {% endif %}
+              </div>
+              <div class="nt-body">
+                <span class="nt-type">{{ n.get_notification_type_display }}</span>
+                <span class="nt-message">{{ n.message }}</span>
+              </div>
+              <span class="nt-time">{{ n.created_at|timesince }} ago</span>
+              <span class="nt-status-dot" title="{% if n.is_read %}Read{% else %}Unread{% endif %}">
+                {% if not n.is_read %}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#EF4444;"></span>{% endif %}
+              </span>
             </div>
-            <div class="nt-body">
-              <span class="nt-type">Attendance</span>
-              <span class="nt-message">You have successfully checked in.</span>
-            </div>
-            <div class="nt-time">Jul 18, 2026 &middot; 8:01 AM</div>
+            {% endfor %}
+          {% else %}
+          <div class="d-flex flex-column align-items-center text-center py-5 text-muted empty-state-cell">
+            <i class="bi bi-bell-slash fs-1 d-block mb-3" style="color:var(--gray-400);"></i>
+            <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No notifications found.</h6>
+            <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;max-width:380px;">Notifications will appear here when the system starts sending alerts.</p>
           </div>
-
-          <div class="nt-row" data-type="reminder">
-            <div class="nt-icon nt-icon-blue">
-              <i class="bi bi-alarm"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Reminder</span>
-              <span class="nt-message">Don't forget to check-out at the end of your shift.</span>
-            </div>
-            <div class="nt-time">Jul 18, 2026 &middot; 4:30 PM</div>
-          </div>
-
-          <div class="nt-row" data-type="system">
-            <div class="nt-icon nt-icon-indigo">
-              <i class="bi bi-gear"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">System</span>
-              <span class="nt-message">New attendance report is now available.</span>
-            </div>
-            <div class="nt-time">Jul 18, 2026 &middot; 6:00 PM</div>
-          </div>
-
-          <div class="nt-row" data-type="emergency">
-            <div class="nt-icon nt-icon-red">
-              <i class="bi bi-exclamation-triangle"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Emergency</span>
-              <span class="nt-message">New emergency alert from Ali Hassan.</span>
-            </div>
-            <div class="nt-time">Jul 18, 2026 &middot; 10:15 AM</div>
-          </div>
-
-          <div class="nt-row" data-type="gps">
-            <div class="nt-icon nt-icon-orange">
-              <i class="bi bi-send"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">GPS</span>
-              <span class="nt-message">Location tracking started successfully.</span>
-            </div>
-            <div class="nt-time">Jul 17, 2026 &middot; 9:00 AM</div>
-          </div>
-
-          <div class="nt-row" data-type="center">
-            <div class="nt-icon nt-icon-purple">
-              <i class="bi bi-building"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Center</span>
-              <span class="nt-message">You have been assigned to Center 5.</span>
-            </div>
-            <div class="nt-time">Jul 17, 2026 &middot; 2:00 PM</div>
-          </div>
-
-          <div class="nt-row" data-type="attendance">
-            <div class="nt-icon nt-icon-green">
-              <i class="bi bi-calendar-check"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Attendance</span>
-              <span class="nt-message">Sara Khan checked in at Center 2.</span>
-            </div>
-            <div class="nt-time">Jul 17, 2026 &middot; 7:55 AM</div>
-          </div>
-
-          <div class="nt-row" data-type="emergency">
-            <div class="nt-icon nt-icon-red">
-              <i class="bi bi-exclamation-triangle"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Emergency</span>
-              <span class="nt-message">SOS alert received from Hina Yousaf near Center 3.</span>
-            </div>
-            <div class="nt-time">Jul 16, 2026 &middot; 4:20 PM</div>
-          </div>
-
-          <div class="nt-row" data-type="system">
-            <div class="nt-icon nt-icon-indigo">
-              <i class="bi bi-file-earmark-text"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">System</span>
-              <span class="nt-message">Monthly performance report for July is ready.</span>
-            </div>
-            <div class="nt-time">Jul 16, 2026 &middot; 6:00 PM</div>
-          </div>
-
-          <div class="nt-row" data-type="reminder">
-            <div class="nt-icon nt-icon-blue">
-              <i class="bi bi-alarm"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Reminder</span>
-              <span class="nt-message">Staff meeting scheduled for tomorrow at 10:00 AM.</span>
-            </div>
-            <div class="nt-time">Jul 15, 2026 &middot; 5:00 PM</div>
-          </div>
-
-          <div class="nt-row" data-type="gps">
-            <div class="nt-icon nt-icon-orange">
-              <i class="bi bi-geo-alt"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">GPS</span>
-              <span class="nt-message">Bilal Ahmed's location was updated near Center 4.</span>
-            </div>
-            <div class="nt-time">Jul 15, 2026 &middot; 11:30 AM</div>
-          </div>
-
-          <div class="nt-row" data-type="center">
-            <div class="nt-icon nt-icon-purple">
-              <i class="bi bi-people"></i>
-            </div>
-            <div class="nt-body">
-              <span class="nt-type">Center</span>
-              <span class="nt-message">Staff roster updated for Center 1.</span>
-            </div>
-            <div class="nt-time">Jul 14, 2026 &middot; 3:00 PM</div>
-          </div>
-
+          {% endif %}
         </div>
 
       </div>

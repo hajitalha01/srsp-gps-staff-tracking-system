@@ -1,9 +1,14 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),                 # Django's own admin (alag hai)
-    path('', include('accounts.urls')),               # login screen root pe
+    path('admin/', admin.site.urls),
+    path('', include('accounts.urls')),
     path('staff/', include('staff.urls')),
-    path('panel/', include('admin_panel.urls')),       # humara admin panel
+    path('panel/', include('admin_panel.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -194,6 +194,12 @@
 }
 
 /* ---------- responsive ---------- */
+@media (max-width: 1199.98px) {
+  .pf-layout {
+    gap: 1.5rem;
+  }
+}
+
 @media (max-width: 991.98px) {
   .pf-layout {
     grid-template-columns: 1fr;
@@ -203,12 +209,66 @@
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--gray-200, #E5E7EB);
     margin-bottom: 1rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pf-avatar {
+    width: 100px;
+    height: 100px;
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .pf-page-title {
+    font-size: 1.125rem;
+  }
+
+  .pf-page-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .pf-card {
+    padding: 1rem 0.85rem;
+    border-radius: 10px;
+  }
+
+  .pf-section-title {
+    font-size: 0.9rem;
+  }
+
+  .pf-label {
+    font-size: 0.75rem;
+  }
+
+  .pf-input {
+    font-size: 0.9375rem;
+    padding: 0.625rem 0.75rem;
+    min-height: 44px;
+  }
+
+  .pf-avatar {
+    width: 90px;
+    height: 90px;
+    font-size: 1.5rem;
+  }
+
+  .pf-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 0.9375rem;
+  }
+
+  .pf-actions {
+    flex-direction: column;
   }
 }
 
 @media (max-width: 575.98px) {
   .pf-card {
-    padding: 1.25rem 1rem;
+    padding: 0.85rem 0.75rem;
   }
   .pf-actions {
     flex-direction: column;

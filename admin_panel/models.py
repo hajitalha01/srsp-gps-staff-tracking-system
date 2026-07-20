@@ -6,15 +6,21 @@ class Center(models.Model):
     class Status(models.TextChoices):
         ACTIVE = 'Active', 'Active'
         INACTIVE = 'Inactive', 'Inactive'
+        PENDING = 'Pending', 'Pending'
 
     center_name = models.CharField(max_length=255)
     center_code = models.CharField(max_length=20, unique=True)
+    complete_address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
     district = models.CharField(max_length=100)
-    address = models.TextField()
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    geofence_radius = models.PositiveIntegerField(help_text='Radius in meters')
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    assigned_teacher = models.OneToOneField(
+        'staff.StaffProfile',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='teaching_center',
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,7 +28,7 @@ class Center(models.Model):
         ordering = ['center_name']
 
     def __str__(self):
-        return f'{self.center_name} ({self.center_code})'
+        return self.center_name
 
 
 class Attendance(models.Model):
@@ -62,36 +68,74 @@ class Attendance(models.Model):
 
 
 class EmergencyAlert(models.Model):
-    class Priority(models.TextChoices):
-        HIGH = 'High', 'High'
-        MEDIUM = 'Medium', 'Medium'
-        LOW = 'Low', 'Low'
-
     class Status(models.TextChoices):
-        ACTIVE = 'Active', 'Active'
+        PENDING = 'Pending', 'Pending'
+        IN_PROGRESS = 'In Progress', 'In Progress'
         RESOLVED = 'Resolved', 'Resolved'
+        CANCELLED = 'Cancelled', 'Cancelled'
 
     staff = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='emergency_alerts'
     )
-    center = models.ForeignKey(
+    assigned_center = models.ForeignKey(
         Center,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name='emergency_alerts'
     )
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    priority = models.CharField(max_length=20, choices=Priority.choices, default=Priority.HIGH)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
-    message = models.TextField(blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_address = models.TextField(blank=True)
+    alert_message = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_alerts'
+    )
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'{self.staff.full_name} - {self.priority} ({self.status})'
+        return f'{self.staff.full_name} - {self.status}'
+
+
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        EMERGENCY = 'emergency', 'Emergency Alert'
+        ATTENDANCE = 'attendance', 'Attendance'
+        INFO = 'info', 'Information'
+
+    staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notification_type = models.CharField(
+        max_length=20, choices=Type.choices, default=Type.INFO
+    )
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    related_alert = models.ForeignKey(
+        EmergencyAlert,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.staff.full_name} - {self.notification_type}'

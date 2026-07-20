@@ -51,6 +51,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'admin_panel.context_processors.notification_count',
             ],
         },
     },
@@ -66,6 +67,12 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
+LOGIN_URL = 'login'
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -81,6 +88,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

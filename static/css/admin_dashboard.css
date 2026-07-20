@@ -73,6 +73,7 @@ body {
   background: var(--gray-50);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* Remove default list styles */
@@ -95,7 +96,7 @@ a {
 
 /* ----- 4. Sidebar ----- */
 .dash-sidebar {
-  width: var(--sidebar-width);
+  width: 70px;
   flex-shrink: 0;
   position: fixed;
   top: 0;
@@ -106,19 +107,32 @@ a {
   flex-direction: column;
   background: linear-gradient(180deg, #0D2B1F 0%, #1A4A33 50%, #226347 100%);
   color: #fff;
-  transition: transform 0.3s ease;
+  overflow: hidden;
+  transition: width 0.3s ease, transform 0.3s ease;
+}
+body.sidebar-hover .dash-sidebar,
+.dash-sidebar:hover {
+  width: 260px;
 }
 
 /* Brand / Logo */
-.sidebar-brand {
+.dash-sidebar .sidebar-brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 20px 20px 16px;
+  padding: 18px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  transition: padding 0.3s ease, justify-content 0.3s ease;
+}
+body.sidebar-hover .dash-sidebar .sidebar-brand,
+.dash-sidebar:hover .sidebar-brand {
+  justify-content: flex-start;
+  padding: 18px 20px 16px;
 }
 
-.brand-icon {
+.dash-sidebar .brand-icon {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
@@ -131,26 +145,36 @@ a {
   flex-shrink: 0;
 }
 
-.brand-text {
+.dash-sidebar .brand-text {
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.25s ease, max-width 0.3s ease;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+body.sidebar-hover .dash-sidebar .brand-text,
+.dash-sidebar:hover .brand-text {
+  opacity: 1;
+  max-width: 200px;
+}
 
 /* Navigation */
-.sidebar-nav {
+.dash-sidebar .sidebar-nav {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 12px 10px;
 }
 
-.nav-list {
+.dash-sidebar .nav-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.nav-link {
+.dash-sidebar .nav-link {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -163,35 +187,49 @@ a {
   cursor: pointer;
 }
 
-.nav-link i {
+.dash-sidebar .nav-link i {
   width: 20px;
   text-align: center;
   font-size: 1.0625rem;
   flex-shrink: 0;
 }
 
-.nav-link:hover {
+.dash-sidebar .nav-link:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
-.nav-link.active {
+.dash-sidebar .nav-link.active {
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-weight: 600;
 }
 
-/* Logout link */
-.sidebar-footer {
-  padding: 12px 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.dash-sidebar .nav-link span {
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.25s ease, max-width 0.3s ease;
+}
+body.sidebar-hover .dash-sidebar .nav-link span,
+.dash-sidebar:hover .nav-link span {
+  opacity: 1;
+  max-width: 200px;
 }
 
-.logout-link {
+/* Logout link */
+.dash-sidebar .sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: auto;
+}
+
+.dash-sidebar .logout-link {
   color: rgba(255, 200, 200, 0.7) !important;
 }
 
-.logout-link:hover {
+.dash-sidebar .logout-link:hover {
   color: #FF6B6B !important;
   background: rgba(255, 80, 80, 0.12) !important;
 }
@@ -199,10 +237,18 @@ a {
 /* ----- 5. Main Content Area ----- */
 .dash-main {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  margin-left: 70px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+body.sidebar-hover .dash-main,
+.dash-sidebar:hover + .dash-main {
+  margin-left: 260px;
 }
 
 /* ----- 6. Top Navbar ----- */
@@ -392,6 +438,8 @@ a {
   flex: 1;
   padding: 24px;
   max-width: 1440px;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* ----- 8. Statistics Cards ----- */
@@ -598,12 +646,17 @@ a {
   opacity: 1;
 }
 
-/* ----- 11. Responsive: Tablet & Mobile ----- */
+/* ===== Responsive: Tablet & Mobile ===== */
 
-/* Hide sidebar behind overlay on smaller screens */
+/* Tablet & Mobile: hide sidebar behind overlay (below 992px) */
 @media (max-width: 991.98px) {
   .dash-sidebar {
+    width: var(--sidebar-width);
     transform: translateX(-100%);
+  }
+  body.sidebar-hover .dash-sidebar,
+  .dash-sidebar:hover {
+    width: var(--sidebar-width);
   }
 
   .dash-sidebar.show {
@@ -621,15 +674,25 @@ a {
   .dash-main {
     margin-left: 0;
   }
+  body.sidebar-hover .dash-main,
+  .dash-sidebar:hover + .dash-main {
+    margin-left: 0;
+  }
 }
 
-@media (max-width: 767.98px) {
+/* Tablet (768px - 991px): sidebar hidden, 2 cards per row */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .dash-topbar {
+    padding: 0 20px;
+  }
+
   .dash-content {
-    padding: 16px;
+    padding: 20px;
   }
 
   .stat-card {
     padding: 16px;
+    gap: 14px;
   }
 
   .stat-icon {
@@ -642,29 +705,171 @@ a {
     font-size: 1.375rem;
   }
 
-  .dash-topbar {
-    padding: 0 16px;
+  .table-card-header {
+    padding: 14px 18px;
+  }
+
+  .dash-table thead th,
+  .dash-table tbody td {
+    padding: 11px 14px;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Small desktop (992px - 1199px): sidebar visible as icons */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .dash-content {
+    padding: 22px;
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 1.25rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
   }
 
   .dash-table thead th,
   .dash-table tbody td {
     padding: 10px 14px;
   }
-
-  .table-card-header {
-    padding: 12px 14px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
 }
 
-@media (max-width: 575.98px) {
+/* Mobile (<768px): 1 card per row, full-width inputs, touch-friendly */
+@media (max-width: 767.98px) {
+  .dash-topbar {
+    padding: 0 12px;
+    height: 52px;
+    gap: 8px;
+  }
+
+  .topbar-left {
+    gap: 8px;
+  }
+
+  .topbar-title h4 {
+    font-size: 0.9375rem;
+  }
+
+  .topbar-title p {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 4px;
+  }
+
+  .topbar-right .topbar-separator {
+    display: none;
+  }
+
   .date-picker {
     display: none;
   }
 
-  .topbar-title h4 {
+  .profile-info {
+    display: none !important;
+  }
+
+  .profile-btn {
+    padding: 2px !important;
+  }
+
+  .dash-content {
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  .stat-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .stat-icon {
+    width: 36px;
+    height: 36px;
     font-size: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .table-card-header {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .table-card-header h5 {
+    font-size: 0.875rem;
+  }
+
+  .dash-table thead th,
+  .dash-table tbody td {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+
+  /* Touch-friendly: minimum 44px tap targets */
+  .topbar-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn {
+    min-height: 44px;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9375rem;
+  }
+
+  .btn-sm {
+    min-height: 38px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 575.98px) {
+  .topbar-right {
+    gap: 2px;
+  }
+
+  .topbar-icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dash-content {
+    padding: 10px;
+  }
+
+  .stat-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+  }
+
+  .stat-value {
+    font-size: 1.125rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
   }
 }
 

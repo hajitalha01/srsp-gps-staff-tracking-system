@@ -73,6 +73,31 @@
     if (overlay) overlay.remove();
   };
 
+  // ----- Collapsible Sidebar: expand on hover, collapse on leave -----
+  document.addEventListener('DOMContentLoaded', function() {
+    var sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
+
+    var hoverTimer;
+
+    sidebar.addEventListener('mouseenter', function() {
+      clearTimeout(hoverTimer);
+      document.body.classList.add('sidebar-hover');
+    });
+
+    sidebar.addEventListener('mouseleave', function() {
+      hoverTimer = setTimeout(function() {
+        document.body.classList.remove('sidebar-hover');
+      }, 80);
+    });
+
+    window.addEventListener('resize', function() {
+      if (window.innerWidth < 992) {
+        document.body.classList.remove('sidebar-hover');
+      }
+    });
+  });
+
   // ----- Active Nav Highlighting -----
   document.addEventListener('DOMContentLoaded', function() {
     var currentPath = window.location.pathname;

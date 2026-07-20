@@ -12,7 +12,7 @@
         <p style="font-size:13px;color:var(--text-secondary);margin:2px 0 0">Welcome back, admin</p>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary)"></i>
+        <a href="{% url 'admin_notifications' %}" style="text-decoration:none;color:inherit"><i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary)"></i></a>
         <div style="width:30px;height:30px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-accent)">AU</div>
       </div>
     </div>
@@ -31,9 +31,18 @@
       </div>
       <table style="width:100%;font-size:13px;border-collapse:collapse">
         <tr style="color:var(--text-secondary)"><td style="padding:6px 0">Staff name</td><td>Center</td><td>Status</td><td>Time</td></tr>
-        <tr style="border-top:0.5px solid var(--border)"><td style="padding:6px 0">Ali Hassan</td><td>Center 5</td><td><span style="background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:20px;font-size:11px">Present</span></td><td>08:01 AM</td></tr>
-        <tr style="border-top:0.5px solid var(--border)"><td style="padding:6px 0">Sara Khan</td><td>Center 2</td><td><span style="background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:20px;font-size:11px">Present</span></td><td>08:05 AM</td></tr>
-        <tr style="border-top:0.5px solid var(--border)"><td style="padding:6px 0">Nida Fatima</td><td>Center 3</td><td><span style="background:var(--bg-danger);color:var(--text-danger);padding:2px 8px;border-radius:20px;font-size:11px">Absent</span></td><td>-</td></tr>
+        {% for a in recent_attendance %}
+        <tr style="border-top:0.5px solid var(--border)">
+          <td style="padding:6px 0">{{ a.staff.full_name }}</td>
+          <td>{{ a.center.center_name|default:"--" }}</td>
+          <td><span style="background:{% if a.status == 'Present' %}var(--bg-success);color:var(--text-success){% elif a.status == 'Late' %}var(--bg-warning);color:var(--text-warning){% else %}var(--bg-danger);color:var(--text-danger){% endif %};padding:2px 8px;border-radius:20px;font-size:11px">{{ a.status }}</span></td>
+          <td>{{ a.check_in_time|date:"h:i A"|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr style="border-top:0.5px solid var(--border)">
+          <td colspan="4" style="padding:12px 0;text-align:center;color:var(--text-muted);font-size:12px">No attendance records for today</td>
+        </tr>
+        {% endfor %}
       </table>
     </div>
   </div>
