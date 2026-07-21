@@ -79,13 +79,61 @@
   var successModal = new bootstrap.Modal(successModalEl);
   var deleteConfirmModal = new bootstrap.Modal(deleteConfirmModalEl);
 
+  /* ---- Load centers dropdown via AJAX ---- */
+  function loadCentersDropdown(callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/panel/centers/list/');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+        } catch (e) {
+          if (callback) callback();
+          return;
+        }
+        if (data.centers) {
+          var select = document.getElementById('id_assigned_center');
+          if (select) {
+            var currentValue = select.value;
+            select.innerHTML = '<option value="">Select Center</option>';
+            data.centers.forEach(function (c) {
+              var opt = document.createElement('option');
+              opt.value = c.id;
+              opt.textContent = c.center_name;
+              select.appendChild(opt);
+            });
+            select.value = currentValue;
+          }
+          var filterSelect = document.getElementById('centerFilter');
+          if (filterSelect) {
+            var filterValue = filterSelect.value;
+            filterSelect.innerHTML = '<option value="">All Centers</option>';
+            data.centers.forEach(function (c) {
+              var opt = document.createElement('option');
+              opt.value = c.id;
+              opt.textContent = c.center_name;
+              filterSelect.appendChild(opt);
+            });
+            filterSelect.value = filterValue;
+          }
+        }
+      }
+      if (callback) callback();
+    };
+    xhr.onerror = function () { if (callback) callback(); };
+    xhr.send();
+  }
+
   /* ---- "Add Staff" trigger ---- */
   var addBtn = document.querySelector('[data-action="add-staff"]');
   if (addBtn) {
     addBtn.addEventListener('click', function () {
       resetForm();
       setFormMode('add');
-      addStaffModal.show();
+      loadCentersDropdown(function () {
+        addStaffModal.show();
+      });
     });
   }
 
@@ -207,33 +255,35 @@
   function editStaff(staffId) {
     resetForm();
 
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/panel/staff/' + staffId + '/edit/');
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    loadCentersDropdown(function () {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/panel/staff/' + staffId + '/edit/');
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-    xhr.onload = function () {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-        } catch (e) {
-          showToast('Invalid server response.', 'danger');
-          return;
-        }
-        if (data.success) {
-          fillEditForm(data.staff);
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+          } catch (e) {
+            showToast('Invalid server response.', 'danger');
+            return;
+          }
+          if (data.success) {
+            fillEditForm(data.staff);
+          } else {
+            showToast(data.errors || 'Failed to load staff data.', 'danger');
+          }
         } else {
-          showToast(data.errors || 'Failed to load staff data.', 'danger');
+          showToast('Server error. Could not load staff data.', 'danger');
         }
-      } else {
-        showToast('Server error. Could not load staff data.', 'danger');
-      }
-    };
+      };
 
-    xhr.onerror = function () {
-      showToast('Network error. Could not load staff data.', 'danger');
-    };
+      xhr.onerror = function () {
+        showToast('Network error. Could not load staff data.', 'danger');
+      };
 
-    xhr.send();
+      xhr.send();
+    });
   }
 
   function fillEditForm(staff) {

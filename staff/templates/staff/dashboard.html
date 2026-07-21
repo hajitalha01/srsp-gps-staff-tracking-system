@@ -17,7 +17,10 @@
         <p style="font-size:14px;font-weight:500;margin:0">{{ request.user.get_full_name }}</p>
         <p style="font-size:11px;color:var(--text-secondary);margin:1px 0 0">{{ user_center }}</p>
       </div>
-      <i class="ti ti-settings" style="margin-left:auto;font-size:18px;color:var(--text-secondary)"></i>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+        <a href="{% url 'staff_history' %}" style="text-decoration:none;color:inherit;display:inline-flex" title="Settings"><i class="ti ti-settings" style="font-size:18px;color:var(--text-secondary);transition:color 0.2s" onmouseover="this.style.color='var(--srsp-accent)'" onmouseout="this.style.color='var(--text-secondary)'"></i></a>
+        <a href="{% url 'logout' %}" style="text-decoration:none;color:inherit;display:inline-flex" title="Logout"><i class="ti ti-logout" style="font-size:18px;color:var(--text-secondary);transition:color 0.2s" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-secondary)'"></i></a>
+      </div>
     </div>
 
     <!-- Live location map (Leaflet.js yahan mount hoga) -->
@@ -33,17 +36,39 @@
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:14px">
-      <button style="flex:1;background:#2FBF8F;color:#0B2E1F;border:none;padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <button id="checkInBtn" data-checked-in="{{ has_checked_in|yesno:'true,false' }}" data-checked-out="{{ has_checked_out|yesno:'true,false' }}" style="flex:1;background:#2FBF8F;color:#0B2E1F;border:none;padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
         <i class="ti ti-login-2" style="font-size:18px"></i>Check in
       </button>
-      <button style="flex:1;background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border);padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <button id="checkOutBtn" data-checked-in="{{ has_checked_in|yesno:'true,false' }}" data-checked-out="{{ has_checked_out|yesno:'true,false' }}" style="flex:1;background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border);padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
         <i class="ti ti-logout-2" style="font-size:18px"></i>Check out
       </button>
     </div>
 
     <p style="font-size:12px;font-weight:500;margin:0 0 8px">My recent attendance</p>
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 10px;margin-bottom:14px">
+    <div id="attendanceSection" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 10px;margin-bottom:14px">
+      {% if has_checked_in %}
+      <div style="width:100%;text-align:center">
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 4px">Today's Attendance</p>
+        <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
+          <div>
+            <p style="font-size:10px;color:var(--text-secondary);margin:0">Check In</p>
+            <p style="font-size:13px;font-weight:500;margin:2px 0 0;color:var(--text-success)">{{ today_check_in }}</p>
+          </div>
+          {% if has_checked_out %}
+          <div>
+            <p style="font-size:10px;color:var(--text-secondary);margin:0">Check Out</p>
+            <p style="font-size:13px;font-weight:500;margin:2px 0 0;color:var(--text-accent)">{{ today_check_out }}</p>
+          </div>
+          <div>
+            <p style="font-size:10px;color:var(--text-secondary);margin:0">Working Hours</p>
+            <p style="font-size:13px;font-weight:500;margin:2px 0 0;color:var(--text-primary)">{{ today_working_hours }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
       <p style="font-size:12px;color:var(--text-muted);margin:0">No attendance records available.</p>
+      {% endif %}
     </div>
 
     <p style="font-size:12px;font-weight:500;margin:0 0 8px">Panic alarm history</p>
@@ -51,16 +76,51 @@
       <p style="font-size:12px;color:var(--text-muted);margin:0">No emergency alerts.</p>
     </div>
 
-    <button style="width:100%;background:var(--fill-danger);color:var(--on-danger);border:none;padding:14px;border-radius:12px;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px">
+    <button id="panicBtn" style="width:100%;background:var(--fill-danger);color:var(--on-danger);border:none;padding:14px;border-radius:12px;font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px">
       <i class="ti ti-alert-triangle" style="font-size:18px"></i>Panic alarm
     </button>
   </div>
 </div>
+
+<!-- Face Verification Modal -->
+<div id="faceModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:24px;width:340px;max-width:92vw;text-align:center;position:relative;">
+    <p style="font-size:15px;font-weight:600;margin:0 0 12px;color:#111" id="faceModalTitle">Verify Your Identity</p>
+    <p style="font-size:12px;color:#666;margin:0 0 16px">Position your face in the frame and capture a selfie</p>
+
+    <div id="cameraContainer" style="position:relative;width:100%;aspect-ratio:3/4;background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px">
+      <video id="cameraPreview" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
+      <canvas id="capturedCanvas" style="display:none;width:100%;height:100%;object-fit:cover;"></canvas>
+      <div id="faceLoading" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;flex-direction:column;gap:8px">
+        <div style="width:32px;height:32px;border:3px solid rgba(255,255,255,0.3);border-top-color:#2FBF8F;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <p style="font-size:12px;color:#fff;margin:0">Verifying face...</p>
+      </div>
+      <div id="faceResult" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:20px;box-sizing:border-box;">
+        <div id="faceResultIcon" style="font-size:40px;margin-bottom:4px"></div>
+        <p id="faceResultMsg" style="font-size:14px;font-weight:500;margin:0;text-align:center"></p>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button id="captureBtn" style="padding:10px 20px;border:none;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;background:#2FBF8F;color:#0B2E1F;">Capture Selfie</button>
+      <button id="retakeBtn" style="display:none;padding:10px 20px;border:1px solid #ccc;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#333;">Retake</button>
+      <button id="verifyBtn" style="display:none;padding:10px 20px;border:none;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;background:#2FBF8F;color:#0B2E1F;">Verify &amp; Proceed</button>
+      <button id="faceCloseBtn" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:22px;cursor:pointer;color:#999;line-height:1;">&times;</button>
+    </div>
+
+    <p id="faceError" style="display:none;font-size:12px;color:#EF4444;margin:10px 0 0"></p>
+  </div>
+</div>
+
+<div id="attendanceToast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:14px;font-size:14px;font-weight:500;z-index:10000;text-align:center;max-width:320px;"></div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Leaflet map init — staff ki current GPS location dikhane ke liye
 document.addEventListener('DOMContentLoaded', function(){
   var map = L.map('liveMap', {zoomControl:false, dragging:false, scrollWheelZoom:false}).setView([34.0151, 71.5249], 14);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -70,9 +130,370 @@ document.addEventListener('DOMContentLoaded', function(){
       var latlng = [pos.coords.latitude, pos.coords.longitude];
       map.setView(latlng, 15);
       L.marker(latlng).addTo(map);
-      // TODO: send latlng to backend via fetch() to save attendance location
     });
   }
 });
+
+(function() {
+  var checkInBtn = document.getElementById('checkInBtn');
+  var checkOutBtn = document.getElementById('checkOutBtn');
+  var toast = document.getElementById('attendanceToast');
+  var attendanceSection = document.getElementById('attendanceSection');
+  var hasCheckedIn = checkInBtn.dataset.checkedIn === 'true';
+  var hasCheckedOut = checkOutBtn.dataset.checkedOut === 'true';
+
+  // Face modal elements
+  var faceModal = document.getElementById('faceModal');
+  var faceModalTitle = document.getElementById('faceModalTitle');
+  var cameraPreview = document.getElementById('cameraPreview');
+  var capturedCanvas = document.getElementById('capturedCanvas');
+  var captureBtn = document.getElementById('captureBtn');
+  var retakeBtn = document.getElementById('retakeBtn');
+  var verifyBtn = document.getElementById('verifyBtn');
+  var faceCloseBtn = document.getElementById('faceCloseBtn');
+  var faceLoading = document.getElementById('faceLoading');
+  var faceResult = document.getElementById('faceResult');
+  var faceError = document.getElementById('faceError');
+  var faceResultIcon = document.getElementById('faceResultIcon');
+  var faceResultMsg = document.getElementById('faceResultMsg');
+
+  var cameraStream = null;
+  var capturedImageData = null;
+  var pendingAction = null; // 'checkin' or 'checkout'
+
+  function updateButtons() {
+    if (!hasCheckedIn) {
+      checkInBtn.disabled = false;
+      checkInBtn.style.opacity = '1';
+      checkInBtn.style.background = '#2FBF8F';
+      checkInBtn.style.color = '#0B2E1F';
+      checkInBtn.style.cursor = 'pointer';
+
+      checkOutBtn.disabled = true;
+      checkOutBtn.style.opacity = '0.5';
+      checkOutBtn.style.background = 'var(--fill-secondary)';
+      checkOutBtn.style.color = 'var(--text-secondary)';
+      checkOutBtn.style.cursor = 'not-allowed';
+    } else if (hasCheckedIn && !hasCheckedOut) {
+      checkInBtn.disabled = true;
+      checkInBtn.style.opacity = '0.5';
+      checkInBtn.style.background = 'var(--fill-secondary)';
+      checkInBtn.style.color = 'var(--text-secondary)';
+      checkInBtn.style.cursor = 'not-allowed';
+
+      checkOutBtn.disabled = false;
+      checkOutBtn.style.opacity = '1';
+      checkOutBtn.style.background = '#2FBF8F';
+      checkOutBtn.style.color = '#0B2E1F';
+      checkOutBtn.style.cursor = 'pointer';
+    } else {
+      checkInBtn.disabled = true;
+      checkInBtn.style.opacity = '0.5';
+      checkInBtn.style.background = 'var(--fill-secondary)';
+      checkInBtn.style.color = 'var(--text-secondary)';
+      checkInBtn.style.cursor = 'not-allowed';
+
+      checkOutBtn.disabled = true;
+      checkOutBtn.style.opacity = '0.5';
+      checkOutBtn.style.background = 'var(--fill-secondary)';
+      checkOutBtn.style.color = 'var(--text-secondary)';
+      checkOutBtn.style.cursor = 'not-allowed';
+    }
+  }
+
+  function showToast(msg, type) {
+    toast.textContent = msg;
+    toast.style.background = type === 'success' ? '#2FBF8F' : '#EF4444';
+    toast.style.color = type === 'success' ? '#0B2E1F' : '#fff';
+    toast.style.display = 'block';
+    setTimeout(function() { toast.style.display = 'none'; }, 4000);
+  }
+
+  function getCSRFToken() {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var c = cookies[i].trim();
+      if (c.indexOf('csrftoken=') === 0) return decodeURIComponent(c.substring(10));
+    }
+    return '';
+  }
+
+  function updateAttendanceDisplay(data) {
+    var html = '<div style="width:100%;text-align:center">';
+    html += '<p style="font-size:11px;color:var(--text-muted);margin:0 0 4px">Today\'s Attendance</p>';
+    html += '<div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">';
+    html += '<div><p style="font-size:10px;color:var(--text-secondary);margin:0">Check In</p>';
+    html += '<p style="font-size:13px;font-weight:500;margin:2px 0 0;color:var(--text-success)">' + (data.check_in_time || '{{ today_check_in }}') + '</p></div>';
+    if (data.check_out_time) {
+      html += '<div><p style="font-size:10px;color:var(--text-secondary);margin:0">Check Out</p>';
+      html += '<p style="font-size:13px;font-weight:500;margin:2px 0 0;color:var(--text-accent)">' + data.check_out_time + '</p></div>';
+      html += '<div><p style="font-size:10px;color:var(--text-secondary);margin:0">Working Hours</p>';
+      html += '<p style="font-size:13px;font-weight:500;margin:2px 0 0;color:var(--text-primary)">' + data.working_hours + '</p></div>';
+    }
+    html += '</div></div>';
+    attendanceSection.innerHTML = html;
+  }
+
+  // --- Face Verification ---
+  function openCamera() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } })
+        .then(function(stream) {
+          cameraStream = stream;
+          cameraPreview.srcObject = stream;
+          cameraPreview.style.display = 'block';
+          capturedCanvas.style.display = 'none';
+          captureBtn.style.display = 'inline-block';
+          retakeBtn.style.display = 'none';
+          verifyBtn.style.display = 'none';
+          faceLoading.style.display = 'none';
+          faceResult.style.display = 'none';
+          faceError.style.display = 'none';
+          capturedImageData = null;
+        })
+        .catch(function(err) {
+          showToast('Camera access denied. Please allow camera permissions.', 'error');
+          closeModal();
+        });
+    } else {
+      showToast('Camera not supported on this device.', 'error');
+      closeModal();
+    }
+  }
+
+  function closeCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function(t) { t.stop(); });
+      cameraStream = null;
+    }
+  }
+
+  function captureSelfie() {
+    var ctx = capturedCanvas.getContext('2d');
+    capturedCanvas.width = cameraPreview.videoWidth;
+    capturedCanvas.height = cameraPreview.videoHeight;
+    ctx.drawImage(cameraPreview, 0, 0);
+    capturedImageData = capturedCanvas.toDataURL('image/jpeg', 0.9);
+
+    cameraPreview.style.display = 'none';
+    capturedCanvas.style.display = 'block';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    verifyBtn.style.display = 'inline-block';
+
+    closeCamera();
+  }
+
+  function retakeSelfie() {
+    capturedImageData = null;
+    capturedCanvas.style.display = 'none';
+    captureBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'none';
+    verifyBtn.style.display = 'none';
+    faceResult.style.display = 'none';
+    faceError.style.display = 'none';
+    openCamera();
+  }
+
+  function verifyAndProceed() {
+    if (!capturedImageData) {
+      faceError.textContent = 'Please capture a selfie first.';
+      faceError.style.display = 'block';
+      return;
+    }
+
+    faceLoading.style.display = 'flex';
+    faceResult.style.display = 'none';
+    faceError.style.display = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'none';
+    verifyBtn.style.display = 'none';
+
+    fetch('{% url "staff_verify_face" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ image: capturedImageData })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      faceLoading.style.display = 'none';
+      console.log('DEBUG: Face verification response:', data);
+
+      if (data.success && data.verified) {
+        console.log('DEBUG: Face verification SUCCESS, pendingAction =', pendingAction);
+        faceResult.style.display = 'flex';
+        faceResult.style.background = 'rgba(47,191,143,0.15)';
+        faceResultIcon.innerHTML = '&#10003;';
+        faceResultIcon.style.color = '#2FBF8F';
+        faceResultMsg.textContent = 'Face verified!';
+        faceResultMsg.style.color = '#0B2E1F';
+
+        setTimeout(function() {
+          var action = pendingAction;
+          console.log('DEBUG: 800ms elapsed, pendingAction =', pendingAction);
+          closeModal();
+          console.log('DEBUG: After closeModal, captured action =', action);
+          if (action === 'checkin') {
+            console.log('DEBUG: Calling performCheckIn()');
+            performCheckIn();
+          } else if (action === 'checkout') {
+            console.log('DEBUG: Calling performCheckOut()');
+            performCheckOut();
+          } else {
+            console.log('DEBUG: action is neither checkin nor checkout:', action);
+          }
+        }, 800);
+      } else {
+        faceResult.style.display = 'flex';
+        faceResult.style.background = 'rgba(239,68,68,0.1)';
+        faceResultIcon.innerHTML = '&#10007;';
+        faceResultIcon.style.color = '#EF4444';
+        faceResultMsg.textContent = data.message || 'Face verification failed.';
+        faceResultMsg.style.color = '#EF4444';
+        faceResultMsg.style.fontSize = '13px';
+
+        setTimeout(function() {
+          faceResult.style.display = 'none';
+          retakeSelfie();
+        }, 2000);
+      }
+    })
+    .catch(function() {
+      faceLoading.style.display = 'none';
+      faceError.textContent = 'Network error. Please try again.';
+      faceError.style.display = 'block';
+      captureBtn.style.display = 'none';
+      retakeBtn.style.display = 'inline-block';
+      verifyBtn.style.display = 'inline-block';
+    });
+  }
+
+  function openModal(action) {
+    pendingAction = action;
+    faceModalTitle.textContent = action === 'checkin' ? 'Verify to Check In' : 'Verify to Check Out';
+    faceModal.style.display = 'flex';
+    capturedImageData = null;
+    openCamera();
+  }
+
+  function closeModal() {
+    faceModal.style.display = 'none';
+    closeCamera();
+    pendingAction = null;
+  }
+
+  function performCheckIn() {
+    console.log('DEBUG: performCheckIn() called');
+    console.log('DEBUG: Sending POST to checkin endpoint');
+    fetch('{% url "staff_checkin" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        verification_status: 'Verified',
+        verification_method: 'Face Verification'
+      })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        showToast(data.message, 'success');
+        hasCheckedIn = true;
+        checkInBtn.dataset.checkedIn = 'true';
+        updateButtons();
+        updateAttendanceDisplay({ check_in_time: data.check_in_time });
+      } else {
+        showToast(data.error, 'error');
+      }
+    })
+    .catch(function() {
+      showToast('Network error. Please try again.', 'error');
+    });
+  }
+
+  function performCheckOut() {
+    fetch('{% url "staff_checkout" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        verification_status: 'Verified',
+        verification_method: 'Face Verification'
+      })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        showToast(data.message, 'success');
+        hasCheckedOut = true;
+        checkOutBtn.dataset.checkedOut = 'true';
+        updateButtons();
+        updateAttendanceDisplay({
+          check_in_time: '{{ today_check_in|default:"" }}',
+          check_out_time: data.check_out_time,
+          working_hours: data.working_hours
+        });
+      } else {
+        showToast(data.error, 'error');
+      }
+    })
+    .catch(function() {
+      showToast('Network error. Please try again.', 'error');
+    });
+  }
+
+  checkInBtn.addEventListener('click', function() {
+    if (this.disabled) return;
+    openModal('checkin');
+  });
+
+  checkOutBtn.addEventListener('click', function() {
+    if (this.disabled) return;
+    openModal('checkout');
+  });
+
+  captureBtn.addEventListener('click', captureSelfie);
+  retakeBtn.addEventListener('click', retakeSelfie);
+  verifyBtn.addEventListener('click', verifyAndProceed);
+  faceCloseBtn.addEventListener('click', closeModal);
+
+  var panicBtn = document.getElementById('panicBtn');
+
+  panicBtn.addEventListener('click', function() {
+    if (!confirm('Are you sure you want to send an emergency alert?')) return;
+    fetch('{% url "staff_emergency" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({})
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      if (data.success) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.error, 'error');
+      }
+    })
+    .catch(function() {
+      showToast('Network error. Please try again.', 'error');
+    });
+  });
+
+  updateButtons();
+})();
 </script>
 {% endblock %}

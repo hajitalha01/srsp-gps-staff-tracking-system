@@ -120,10 +120,14 @@
             <p class="rp-page-subtitle">Comprehensive attendance and performance report</p>
           </div>
           <div class="rp-header-right">
-            <div class="rp-search-wrap">
+            <form method="get" action="{% url 'admin_reports' %}" class="rp-search-wrap" style="display:flex;align-items:center;gap:6px;">
               <i class="bi bi-search rp-search-icon"></i>
-              <input type="text" class="rp-search-input" id="reportSearch" placeholder="Search Staff, Center, District..." value="{{ selected_q }}">
-            </div>
+              <input type="text" name="q" class="rp-search-input" id="reportSearch" placeholder="Search Staff, Center, District..." value="{{ selected_q }}" style="flex:1;">
+              <button type="submit" class="rp-btn" id="searchBtn" style="padding:6px 14px;font-size:13px;border-color:#22C55E;background:#22C55E;color:#fff;white-space:nowrap;"><i class="bi bi-search"></i> Search</button>
+              {% if selected_q %}
+              <a href="{% url 'admin_reports' %}" class="rp-btn" style="padding:6px 14px;font-size:13px;border-color:var(--gray-300);text-decoration:none;"><i class="bi bi-x-circle"></i> Clear</a>
+              {% endif %}
+            </form>
             <div class="rp-datetime">
               <i class="bi bi-calendar-event"></i>
               <span id="rpCurrentDateTime"></span>
@@ -451,8 +455,8 @@
                 <tr>
                   <td colspan="10" class="text-center py-5 text-muted empty-state-cell">
                     <i class="bi bi-file-earmark-text fs-1 d-block mb-3"></i>
-                    <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No report data available.</h6>
-                    <p class="mb-0" style="font-size:0.85rem;">Reports will appear here after data is generated.</p>
+                    <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">{% if selected_q %}No reports found.{% else %}No report data available.{% endif %}</h6>
+                    <p class="mb-0" style="font-size:0.85rem;">{% if selected_q %}Try a different search term.{% else %}Reports will appear here after data is generated.{% endif %}</p>
                   </td>
                 </tr>
                 {% endif %}

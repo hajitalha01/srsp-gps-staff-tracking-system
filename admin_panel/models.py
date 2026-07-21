@@ -13,6 +13,9 @@ class Center(models.Model):
     complete_address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
     district = models.CharField(max_length=100)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    allowed_radius = models.PositiveIntegerField(default=100, help_text='Allowed radius in meters')
     assigned_teacher = models.OneToOneField(
         'staff.StaffProfile',
         on_delete=models.SET_NULL,
@@ -39,6 +42,11 @@ class Attendance(models.Model):
         EARLY_CHECKOUT = 'Early Check-Out', 'Early Check-Out'
         PENDING_CHECKOUT = 'Pending Check-Out', 'Pending Check-Out'
 
+    class VerificationStatus(models.TextChoices):
+        PENDING = 'Pending', 'Pending'
+        VERIFIED = 'Verified', 'Verified'
+        FAILED = 'Failed', 'Failed'
+
     staff = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -56,7 +64,21 @@ class Attendance(models.Model):
     working_hours = models.DurationField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PRESENT)
     gps_verified = models.BooleanField(default=False)
+    check_in_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    check_in_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    check_out_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    check_out_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    distance_from_center = models.FloatField(null=True, blank=True, help_text='Distance from assigned center in meters')
     remarks = models.TextField(blank=True)
+    verification_status = models.CharField(
+        max_length=20,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.PENDING,
+        blank=True,
+        null=True
+    )
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verification_method = models.CharField(max_length=50, default='Face Verification', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

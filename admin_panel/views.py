@@ -38,25 +38,30 @@ def dashboard(request):
     today = timezone.now().date()
 
     total_staff = StaffProfile.objects.filter(status=StaffProfile.Status.ACTIVE).count()
-    today_attendance = Attendance.objects.filter(date=today)
-    present_today = today_attendance.filter(status=Attendance.Status.PRESENT).count()
-    absent_today = total_staff - present_today
-    active_alerts = EmergencyAlert.objects.filter(status=EmergencyAlert.Status.PENDING).count()
 
-    recent_attendance = (
-        Attendance.objects.filter(date=today)
-        .select_related('staff', 'center')
-        .order_by('-check_in_time')[:5]
-    )
+    present_records = Attendance.objects.filter(
+        date=today, status=Attendance.Status.PRESENT
+    ).select_related('staff', 'center').order_by('-check_in_time')
+
+    present_count = present_records.count()
+    present_ids = list(present_records.values_list('staff_id', flat=True))
+
+    absent_records = StaffProfile.objects.filter(
+        status=StaffProfile.Status.ACTIVE
+    ).exclude(user_id__in=present_ids).select_related('user', 'assigned_center').order_by('user__full_name')
+
+    absent_count = absent_records.count()
+    active_alerts = EmergencyAlert.objects.filter(status=EmergencyAlert.Status.PENDING).count()
 
     return render(request, 'admin_panel/dashboard.html', {
         'user_role': user.role,
         'user_initials': get_initials(user.full_name),
         'total_staff': total_staff,
-        'present_today': present_today,
-        'absent_today': absent_today if absent_today > 0 else 0,
+        'present_today': present_count,
+        'absent_today': absent_count,
         'active_alerts': active_alerts,
-        'recent_attendance': recent_attendance,
+        'present_staff_today': present_records,
+        'absent_staff_today': absent_records,
     })
 
 
@@ -66,7 +71,7 @@ def staff_management(request):
     staff_list = StaffProfile.objects.select_related(
         'user', 'assigned_center'
     ).all()
-    centers = Center.objects.filter(status='Active')
+    centers = Center.objects.all()
     form = StaffCreationForm()
     user = request.user
     return render(request, 'admin_panel/staff_management.html', {
@@ -262,6 +267,13 @@ def get_center_code():
 
 @login_required
 @user_passes_test(admin_required)
+def get_centers_list_json(request):
+    centers = Center.objects.values('id', 'center_name').order_by('center_name')
+    return JsonResponse({'centers': list(centers)})
+
+
+@login_required
+@user_passes_test(admin_required)
 def add_center_ajax(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'errors': 'Invalid request method.'})
@@ -343,6 +355,9 @@ def serialize_center(center):
         'complete_address': center.complete_address,
         'city': center.city,
         'district': center.district,
+        'latitude': float(center.latitude) if center.latitude else None,
+        'longitude': float(center.longitude) if center.longitude else None,
+        'allowed_radius': center.allowed_radius,
         'assigned_teacher': teacher.id if teacher else None,
         'assigned_teacher_name': teacher.user.full_name if teacher else 'Pending',
         'status': center.status,
@@ -396,6 +411,8 @@ def get_attendance_data(today=None, q='', district='', center_id='', status_filt
                 h = total_secs // 3600
                 m = (total_secs % 3600) // 60
                 hours_str = f'{h}h {m}m'
+            verification_status = a.verification_status or '--'
+            verification_icon = 'verified' if verification_status == 'Verified' else 'failed' if verification_status == 'Failed' else ''
             rows.append({
                 'staff_id': user.id,
                 'profile_id': sp.id,
@@ -411,6 +428,8 @@ def get_attendance_data(today=None, q='', district='', center_id='', status_filt
                 'gps_verified': a.gps_verified,
                 'has_emergency': user.id in staff_with_emergency_today,
                 'profile_photo_url': sp.profile_photo.url if sp.profile_photo else None,
+                'verification_status': verification_status,
+                'verification_icon': verification_icon,
             })
         else:
             rows.append({
@@ -428,6 +447,8 @@ def get_attendance_data(today=None, q='', district='', center_id='', status_filt
                 'gps_verified': False,
                 'has_emergency': user.id in staff_with_emergency_today,
                 'profile_photo_url': sp.profile_photo.url if sp.profile_photo else None,
+                'verification_status': '--',
+                'verification_icon': '',
             })
 
     total_staff = len(rows)
@@ -571,6 +592,8 @@ def get_attendance_json(request):
                 'check_out_time': r['check_out_time'],
                 'working_hours': r['working_hours'],
                 'gps_verified': r['gps_verified'],
+                'verification_status': r['verification_status'],
+                'verification_icon': r['verification_icon'],
             } if r['status'] != 'Absent' else None,
             'status': r['status'],
         })
@@ -677,14 +700,6 @@ def reports(request):
     active_profiles = active_profiles_unfiltered
     all_centers = all_centers_unfiltered
 
-    if q:
-        active_profiles = active_profiles.filter(
-            Q(user__full_name__icontains=q) |
-            Q(user__username__icontains=q) |
-            Q(cnic__icontains=q) |
-            Q(assigned_center__center_name__icontains=q) |
-            Q(assigned_center__district__icontains=q)
-        )
     if district:
         active_profiles = active_profiles.filter(assigned_center__district=district)
         all_centers = all_centers.filter(district=district)
@@ -706,11 +721,36 @@ def reports(request):
     if att_status:
         att_qs = att_qs.filter(status=att_status)
 
+    if q:
+        att_qs = att_qs.filter(
+            Q(staff__full_name__icontains=q) |
+            Q(staff__username__icontains=q) |
+            Q(staff__staff_profile__cnic__icontains=q) |
+            Q(center__center_name__icontains=q) |
+            Q(center__district__icontains=q)
+        )
+
+    search_profiles = active_profiles
+    if q:
+        matching_att_ids = set(att_qs.values_list('staff_id', flat=True))
+        matching_profile_ids = set(
+            active_profiles.filter(
+                Q(user__full_name__icontains=q) |
+                Q(user__username__icontains=q) |
+                Q(cnic__icontains=q) |
+                Q(assigned_center__center_name__icontains=q) |
+                Q(assigned_center__district__icontains=q)
+            ).values_list('id', flat=True)
+        )
+        all_matching_ids = matching_att_ids | matching_profile_ids
+        search_profiles = active_profiles.filter(id__in=all_matching_ids)
+
+    matching_user_ids = set(search_profiles.values_list('user_id', flat=True)) if q else None
+
     att_present_count = att_qs.filter(status=Attendance.Status.PRESENT).count()
     att_late_count = att_qs.filter(status=Attendance.Status.LATE).count()
-    active_ids = set(active_profiles.values_list('id', flat=True))
     staff_with_att_ids = set(att_qs.values_list('staff_id', flat=True))
-    total_active = active_profiles.count()
+    total_active = search_profiles.count()
     att_absent_count = total_active - len(staff_with_att_ids)
     att_pct = f'{round(att_present_count / total_active * 100)}%' if total_active else '--'
 
@@ -722,10 +762,10 @@ def reports(request):
 
     # -- Staff Report --
     staff_total = all_profiles.count()
-    staff_active_count = active_profiles.count()
+    staff_active_count = search_profiles.count()
     staff_inactive = all_profiles.filter(status=StaffProfile.Status.INACTIVE).count()
-    staff_male = active_profiles.filter(gender=StaffProfile.Gender.MALE).count()
-    staff_female = active_profiles.filter(gender=StaffProfile.Gender.FEMALE).count()
+    staff_male = search_profiles.filter(gender=StaffProfile.Gender.MALE).count()
+    staff_female = search_profiles.filter(gender=StaffProfile.Gender.FEMALE).count()
 
     # -- Emergency Report --
     emg_total = all_emergencies.count()
@@ -743,7 +783,7 @@ def reports(request):
     # -- Center-wise Report --
     center_wise = []
     for c in all_centers.select_related('assigned_teacher__user').order_by('center_name'):
-        staff_at_center = active_profiles.filter(assigned_center=c)
+        staff_at_center = search_profiles.filter(assigned_center=c)
         s_ids = set(staff_at_center.values_list('user_id', flat=True))
         staff_att_records = att_qs.filter(staff_id__in=s_ids, center=c).select_related('staff')
         present_c = sum(1 for r in staff_att_records if r.status == Attendance.Status.PRESENT)
@@ -763,7 +803,7 @@ def reports(request):
     for d in district_list:
         centers_in_dist = all_centers.filter(district=d)
         c_count = centers_in_dist.count()
-        staff_in_dist = active_profiles.filter(assigned_center__district=d)
+        staff_in_dist = search_profiles.filter(assigned_center__district=d)
         s_count = staff_in_dist.count()
         s_ids = set(staff_in_dist.values_list('user_id', flat=True))
         att_in_dist = att_qs.filter(staff_id__in=s_ids)
@@ -779,13 +819,23 @@ def reports(request):
         })
 
     # -- Report Table --
+    if date_from and date_to:
+        try:
+            d_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+            d_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+            total_days_in_range = (d_to - d_from).days + 1
+        except ValueError:
+            total_days_in_range = 1
+    else:
+        total_days_in_range = 1
+
     report_rows = []
-    for sp in active_profiles.select_related('user', 'assigned_center').order_by('user__full_name'):
+    for sp in search_profiles.select_related('user', 'assigned_center').order_by('user__full_name'):
         uid = sp.user.id
         user_att = att_qs.filter(staff_id=uid)
         present_days = user_att.filter(status=Attendance.Status.PRESENT).count()
         late_days = user_att.filter(status=Attendance.Status.LATE).count()
-        absent_days = total_active - present_days - late_days
+        absent_days = total_days_in_range - present_days - late_days
         emp_emg_count = all_emergencies.filter(staff_id=uid).count()
         user_att_pct = f'{round(present_days / (present_days + late_days + absent_days) * 100)}%' if (present_days + late_days + absent_days) else '--'
         report_rows.append({
@@ -810,8 +860,11 @@ def reports(request):
         m = today.replace(day=1) - timedelta(days=30 * i)
         m_start = m.replace(day=1)
         m_end = (m_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-        m_present = Attendance.objects.filter(date__gte=m_start, date__lte=m_end, status=Attendance.Status.PRESENT).count()
-        m_absent = Attendance.objects.filter(date__gte=m_start, date__lte=m_end, status=Attendance.Status.ABSENT).count()
+        m_base = Attendance.objects.filter(date__gte=m_start, date__lte=m_end)
+        if matching_user_ids is not None:
+            m_base = m_base.filter(staff_id__in=matching_user_ids)
+        m_present = m_base.filter(status=Attendance.Status.PRESENT).count()
+        m_absent = m_base.filter(status=Attendance.Status.ABSENT).count()
         monthly_data.append({
             'month': m.strftime('%b %Y'),
             'present': m_present,
@@ -819,16 +872,19 @@ def reports(request):
         })
 
     # 2. Present vs Absent (today)
-    pie_present = today_present
-    pie_absent = total_active - today_present
+    if matching_user_ids is not None:
+        pie_present = Attendance.objects.filter(date=today, status=Attendance.Status.PRESENT, staff_id__in=matching_user_ids).count()
+    else:
+        pie_present = today_present
+    pie_absent = total_active - pie_present
 
     # 3. Center-wise Staff Distribution
-    center_staff_data = [{'center': c.center_name, 'count': c.staff_members.filter(status=StaffProfile.Status.ACTIVE).count()} for c in all_centers.order_by('center_name')]
+    center_staff_data = [{'center': c.center_name, 'count': search_profiles.filter(assigned_center=c).count()} for c in all_centers.order_by('center_name')]
 
     # 4. District-wise Staff
     district_staff_data = []
     for d in district_list:
-        cnt = active_profiles.filter(assigned_center__district=d).count()
+        cnt = search_profiles.filter(assigned_center__district=d).count()
         district_staff_data.append({'district': d, 'count': cnt})
 
     # 5. Emergency Alerts Trend (last 7 days)
@@ -841,7 +897,7 @@ def reports(request):
     # 6. Attendance % by Center (horizontal bar)
     att_by_center = []
     for c in all_centers.order_by('center_name'):
-        s_ids = set(active_profiles.filter(assigned_center=c).values_list('user_id', flat=True))
+        s_ids = set(search_profiles.filter(assigned_center=c).values_list('user_id', flat=True))
         if s_ids:
             p_cnt = att_qs.filter(staff_id__in=s_ids, status=Attendance.Status.PRESENT).count()
             pct = round(p_cnt / len(s_ids) * 100)
@@ -851,7 +907,10 @@ def reports(request):
 
     # -- Recent Activity --
     recent_activity = []
-    recent_checkins = Attendance.objects.filter(date=today, check_in_time__isnull=False).select_related('staff', 'center').order_by('-check_in_time')[:10]
+    recent_checkins = Attendance.objects.filter(date=today, check_in_time__isnull=False)
+    if matching_user_ids is not None:
+        recent_checkins = recent_checkins.filter(staff_id__in=matching_user_ids)
+    recent_checkins = recent_checkins.select_related('staff', 'center').order_by('-check_in_time')[:10]
     for a in reversed(list(recent_checkins)):
         recent_activity.append({
             'name': a.staff.full_name,
@@ -859,7 +918,10 @@ def reports(request):
             'time': a.check_in_time.strftime('%I:%M %p'),
             'type': 'checkin',
         })
-    recent_checkouts = Attendance.objects.filter(date=today, check_out_time__isnull=False).select_related('staff', 'center').order_by('-check_out_time')[:10]
+    recent_checkouts = Attendance.objects.filter(date=today, check_out_time__isnull=False)
+    if matching_user_ids is not None:
+        recent_checkouts = recent_checkouts.filter(staff_id__in=matching_user_ids)
+    recent_checkouts = recent_checkouts.select_related('staff', 'center').order_by('-check_out_time')[:10]
     for a in reversed(list(recent_checkouts)):
         recent_activity.append({
             'name': a.staff.full_name,
@@ -867,12 +929,15 @@ def reports(request):
             'time': a.check_out_time.strftime('%I:%M %p'),
             'type': 'checkout',
         })
-    recent_emg = EmergencyAlert.objects.filter(created_at__date=today).select_related('staff', 'assigned_center').order_by('-created_at')[:10]
+    recent_emg = EmergencyAlert.objects.filter(created_at__date=today)
+    if matching_user_ids is not None:
+        recent_emg = recent_emg.filter(staff_id__in=matching_user_ids)
+    recent_emg = recent_emg.select_related('staff', 'assigned_center').order_by('-created_at')[:10]
     for e in reversed(list(recent_emg)):
         recent_activity.append({
             'name': e.staff.full_name,
             'action': 'Emergency Alert',
-            'time': e.created_at.strftime('%I:%M %p'),
+            'time': timezone.localtime(e.created_at).strftime('%I:%M %p'),
             'type': 'emergency',
         })
     recent_activity.sort(key=lambda x: x['time'], reverse=True)
@@ -1051,9 +1116,9 @@ def get_alerts_json(request):
             'status': a.status,
             'profile_photo_url': profile_photo_url,
             'initials': initials,
-            'created_at': a.created_at.strftime('%Y-%m-%d %I:%M %p'),
-            'created_date': a.created_at.strftime('%Y-%m-%d'),
-            'created_time': a.created_at.strftime('%I:%M %p'),
+            'created_at': timezone.localtime(a.created_at).strftime('%Y-%m-%d %I:%M %p'),
+            'created_date': timezone.localtime(a.created_at).strftime('%Y-%m-%d'),
+            'created_time': timezone.localtime(a.created_at).strftime('%I:%M %p'),
         })
     return JsonResponse({'success': True, 'alerts': data})
 
@@ -1133,9 +1198,9 @@ def get_alert_detail(request, alert_id):
             'status': a.status,
             'profile_photo_url': profile_photo_url,
             'initials': initials,
-            'created_at': a.created_at.strftime('%Y-%m-%d %I:%M %p'),
-            'created_date': a.created_at.strftime('%Y-%m-%d'),
-            'created_time': a.created_at.strftime('%I:%M %p'),
+            'created_at': timezone.localtime(a.created_at).strftime('%Y-%m-%d %I:%M %p'),
+            'created_date': timezone.localtime(a.created_at).strftime('%Y-%m-%d'),
+            'created_time': timezone.localtime(a.created_at).strftime('%I:%M %p'),
         }
     })
 

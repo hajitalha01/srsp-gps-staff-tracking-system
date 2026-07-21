@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}My History — Staff{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:center;padding:1.5rem 0;background:var(--surface-1);min-height:100vh">
+  <div style="width:400px;background:var(--surface-2);border-radius:24px;border:0.5px solid var(--border-strong);padding:20px 18px;min-height:640px;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-weight:500;font-size:13px;color:var(--text-accent);overflow:hidden;">
+        {% if staff and staff.profile_photo %}
+        <img src="{{ staff.profile_photo.url }}" alt="{{ request.user.get_full_name }}" style="width:100%;height:100%;object-fit:cover;">
+        {% else %}
+        {{ request.user.get_initials }}
+        {% endif %}
+      </div>
+      <div>
+        <p style="font-size:14px;font-weight:500;margin:0">{{ request.user.get_full_name }}</p>
+        <p style="font-size:11px;color:var(--text-secondary);margin:1px 0 0">{{ user_center }}</p>
+      </div>
+      <a href="{% url 'staff_dashboard' %}" style="margin-left:auto;text-decoration:none;color:inherit;display:inline-flex"><i class="ti ti-arrow-left" style="font-size:18px;color:var(--text-secondary)"></i></a>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button id="tabAttendance" class="history-tab" style="flex:1;background:var(--srsp-accent);color:#0B2E1F;border:none;padding:12px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+        <i class="ti ti-calendar-stats" style="font-size:16px"></i>Attendance History
+      </button>
+      <button id="tabEmergency" class="history-tab" style="flex:1;background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border);padding:12px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+        <i class="ti ti-alert-triangle" style="font-size:16px"></i>Emergency History
+      </button>
+    </div>
+
+    <div id="attendanceSection">
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <a href="?att_filter=7{% if selected_emg_status %}&emg_status={{ selected_emg_status }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_att_filter == '7' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">Last 7 Days</a>
+        <a href="?att_filter=30{% if selected_emg_status %}&emg_status={{ selected_emg_status }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_att_filter == '30' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">Last 30 Days</a>
+        <a href="?att_filter=month{% if selected_emg_status %}&emg_status={{ selected_emg_status }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_att_filter == 'month' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">Last 1 Month</a>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+        <div style="background:var(--bg-success);border-radius:10px;padding:10px;text-align:center">
+          <p style="font-size:18px;font-weight:600;margin:0;color:var(--text-success)">{{ present_count }}</p>
+          <p style="font-size:9px;color:var(--text-secondary);margin:2px 0 0">Present</p>
+        </div>
+        <div style="background:var(--bg-danger);border-radius:10px;padding:10px;text-align:center">
+          <p style="font-size:18px;font-weight:600;margin:0;color:var(--text-danger)">{{ absent_count }}</p>
+          <p style="font-size:9px;color:var(--text-secondary);margin:2px 0 0">Absent</p>
+        </div>
+        <div style="background:var(--bg-warning);border-radius:10px;padding:10px;text-align:center">
+          <p style="font-size:18px;font-weight:600;margin:0;color:var(--text-warning)">{{ late_count }}</p>
+          <p style="font-size:9px;color:var(--text-secondary);margin:2px 0 0">Late</p>
+        </div>
+        <div style="background:var(--bg-accent);border-radius:10px;padding:10px;text-align:center">
+          <p style="font-size:18px;font-weight:600;margin:0;color:var(--text-accent)">{{ attendance_pct }}</p>
+          <p style="font-size:9px;color:var(--text-secondary);margin:2px 0 0">Rate</p>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <thead>
+            <tr style="color:var(--text-secondary);border-bottom:0.5px solid var(--border)">
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Date</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Check-In</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Check-Out</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Hours</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in attendance_records %}
+            <tr style="border-bottom:0.5px solid var(--border)">
+              <td style="padding:8px 4px;white-space:nowrap">{{ a.date|date:"d M Y" }}</td>
+              <td style="padding:8px 4px;white-space:nowrap">{{ a.check_in_time|time:"h:i A"|default:"--" }}</td>
+              <td style="padding:8px 4px;white-space:nowrap">{{ a.check_out_time|time:"h:i A"|default:"--" }}</td>
+              <td style="padding:8px 4px;white-space:nowrap">{{ a.formatted_hours }}</td>
+              <td style="padding:8px 4px;white-space:nowrap">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;{% if a.status == 'Present' %}background:var(--bg-success);color:var(--text-success){% elif a.status == 'Late' %}background:var(--bg-warning);color:var(--text-warning){% elif a.status == 'Absent' %}background:var(--bg-danger);color:var(--text-danger){% else %}background:var(--fill-secondary);color:var(--text-secondary){% endif %}">{{ a.status }}</span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" style="padding:24px 4px;text-align:center;color:var(--text-muted);font-size:12px">No attendance history found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="emergencySection" style="display:none">
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <a href="?emg_status={% if selected_att_filter %}&att_filter={{ selected_att_filter }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if not selected_emg_status %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">All</a>
+        <a href="?emg_status=Pending{% if selected_att_filter %}&att_filter={{ selected_att_filter }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_emg_status == 'Pending' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">Pending</a>
+        <a href="?emg_status=In Progress{% if selected_att_filter %}&att_filter={{ selected_att_filter }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_emg_status == 'In Progress' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">In Progress</a>
+        <a href="?emg_status=Resolved{% if selected_att_filter %}&att_filter={{ selected_att_filter }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_emg_status == 'Resolved' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">Resolved</a>
+        <a href="?emg_status=Cancelled{% if selected_att_filter %}&att_filter={{ selected_att_filter }}{% endif %}" class="filter-chip" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:500;text-decoration:none;{% if selected_emg_status == 'Cancelled' %}background:var(--srsp-accent);color:#0B2E1F{% else %}background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border){% endif %}">Cancelled</a>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <thead>
+            <tr style="color:var(--text-secondary);border-bottom:0.5px solid var(--border)">
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Date</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Time</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Alert Type</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Status</th>
+              <th style="padding:8px 4px;text-align:left;white-space:nowrap">Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in emergency_records %}
+            <tr style="border-bottom:0.5px solid var(--border)">
+              <td style="padding:8px 4px;white-space:nowrap">{{ e.created_at|date:"d M Y" }}</td>
+              <td style="padding:8px 4px;white-space:nowrap">{{ e.created_at|date:"h:i A" }}</td>
+              <td style="padding:8px 4px;white-space:nowrap">Emergency</td>
+              <td style="padding:8px 4px;white-space:nowrap">
+                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;{% if e.status == 'Pending' %}background:#FDF3DC;color:#B8860B{% elif e.status == 'In Progress' %}background:#DBEAFE;color:#2563EB{% elif e.status == 'Resolved' %}background:var(--bg-success);color:var(--text-success){% elif e.status == 'Cancelled' %}background:var(--bg-danger);color:var(--text-danger){% else %}background:var(--fill-secondary);color:var(--text-secondary){% endif %}">{{ e.status }}</span>
+              </td>
+              <td style="padding:8px 4px;white-space:nowrap;color:var(--text-muted)">{{ e.alert_message|default:"--" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" style="padding:24px 4px;text-align:center;color:var(--text-muted);font-size:12px">No emergency history found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  var tabAttendance = document.getElementById('tabAttendance');
+  var tabEmergency = document.getElementById('tabEmergency');
+  var attendanceSection = document.getElementById('attendanceSection');
+  var emergencySection = document.getElementById('emergencySection');
+
+  function showAttendance() {
+    attendanceSection.style.display = 'block';
+    emergencySection.style.display = 'none';
+    tabAttendance.style.background = 'var(--srsp-accent)';
+    tabAttendance.style.color = '#0B2E1F';
+    tabAttendance.style.border = 'none';
+    tabEmergency.style.background = 'var(--fill-secondary)';
+    tabEmergency.style.color = 'var(--text-secondary)';
+    tabEmergency.style.border = '0.5px solid var(--border)';
+  }
+
+  function showEmergency() {
+    attendanceSection.style.display = 'none';
+    emergencySection.style.display = 'block';
+    tabEmergency.style.background = 'var(--srsp-accent)';
+    tabEmergency.style.color = '#0B2E1F';
+    tabEmergency.style.border = 'none';
+    tabAttendance.style.background = 'var(--fill-secondary)';
+    tabAttendance.style.color = 'var(--text-secondary)';
+    tabAttendance.style.border = '0.5px solid var(--border)';
+  }
+
+  tabAttendance.addEventListener('click', showAttendance);
+  tabEmergency.addEventListener('click', showEmergency);
+})();
+</script>
+{% endblock %}

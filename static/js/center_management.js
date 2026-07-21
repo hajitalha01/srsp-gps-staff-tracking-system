@@ -83,9 +83,17 @@
   /* ---- Modal instances ---- */
   var centerModalEl = document.getElementById('centerModal');
   var deleteModalEl = document.getElementById('deleteCenterModal');
+  var mapModalEl = document.getElementById('mapModal');
   if (!centerModalEl || !deleteModalEl) return;
   var centerModal = new bootstrap.Modal(centerModalEl);
   var deleteModal = new bootstrap.Modal(deleteModalEl);
+  var mapModal = mapModalEl ? new bootstrap.Modal(mapModalEl) : null;
+
+  /* ---- Map state ---- */
+  var mapInstance = null;
+  var mapMarker = null;
+  var selectedLat = null;
+  var selectedLng = null;
 
   /* ---- Add trigger ---- */
   var addBtn = document.querySelector('[data-action="add-center"]');
@@ -104,6 +112,9 @@
     var form = document.getElementById('centerForm');
     if (form) form.reset();
     document.getElementById('id_center_id').value = '';
+    document.getElementById('id_latitude').value = '';
+    document.getElementById('id_longitude').value = '';
+    document.getElementById('locationDisplay').textContent = 'No location selected';
     clearFieldErrors();
     var errorsDiv = document.getElementById('centerFormErrors');
     if (errorsDiv) {
@@ -111,6 +122,8 @@
       errorsDiv.textContent = '';
     }
     editingCenterId = null;
+    selectedLat = null;
+    selectedLng = null;
   }
 
   function setCenterFormMode(mode) {
@@ -162,6 +175,18 @@
     document.getElementById('id_city').value = center.city || '';
     document.getElementById('id_complete_address').value = center.complete_address || '';
     document.getElementById('id_district').value = center.district || '';
+    document.getElementById('id_latitude').value = center.latitude || '';
+    document.getElementById('id_longitude').value = center.longitude || '';
+    if (center.latitude && center.longitude) {
+      document.getElementById('locationDisplay').textContent =
+        'Lat: ' + center.latitude + ', Lng: ' + center.longitude;
+      selectedLat = center.latitude;
+      selectedLng = center.longitude;
+    }
+    var radiusSelect = document.getElementById('id_allowed_radius');
+    if (radiusSelect && center.allowed_radius) {
+      radiusSelect.value = center.allowed_radius;
+    }
     var teacherSelect = document.getElementById('id_assigned_teacher');
     if (teacherSelect && center.assigned_teacher) {
       teacherSelect.value = center.assigned_teacher;
@@ -169,6 +194,145 @@
     editingCenterId = center.id;
     setCenterFormMode('edit');
     centerModal.show();
+  }
+
+  /* ---- Map Picker ---- */
+  var pickLocationBtn = document.getElementById('pickLocationBtn');
+
+  if (pickLocationBtn && mapModal) {
+    pickLocationBtn.addEventListener('click', function () {
+      mapModal.show();
+      setTimeout(function () {
+        initMap();
+      }, 300);
+    });
+  }
+
+  function initMap() {
+    var container = document.getElementById('mapContainer');
+    if (!container) return;
+
+    if (mapInstance) {
+      mapInstance.invalidateSize();
+      if (selectedLat && selectedLng) {
+        mapInstance.setView([selectedLat, selectedLng], 15);
+      }
+      return;
+    }
+
+    var defaultLat = selectedLat || 33.6844;
+    var defaultLng = selectedLng || 73.0479;
+
+    mapInstance = L.map('mapContainer').setView([defaultLat, defaultLng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(mapInstance);
+
+    if (selectedLat && selectedLng) {
+      mapMarker = L.marker([selectedLat, selectedLng], { draggable: true }).addTo(mapInstance);
+      updateMapDisplay(selectedLat, selectedLng);
+    }
+
+    mapInstance.on('click', function (e) {
+      placeMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    if (mapMarker) {
+      mapMarker.on('dragend', function (e) {
+        var pos = e.target.getLatLng();
+        updateMapDisplay(pos.lat, pos.lng);
+      });
+    }
+  }
+
+  function placeMarker(lat, lng) {
+    if (mapMarker) {
+      mapMarker.setLatLng([lat, lng]);
+    } else {
+      mapMarker = L.marker([lat, lng], { draggable: true }).addTo(mapInstance);
+      mapMarker.on('dragend', function (e) {
+        var pos = e.target.getLatLng();
+        updateMapDisplay(pos.lat, pos.lng);
+      });
+    }
+    updateMapDisplay(lat, lng);
+  }
+
+  function updateMapDisplay(lat, lng) {
+    var roundedLat = parseFloat(lat).toFixed(6);
+    var roundedLng = parseFloat(lng).toFixed(6);
+    document.getElementById('mapLatDisplay').textContent = roundedLat;
+    document.getElementById('mapLngDisplay').textContent = roundedLng;
+    document.getElementById('confirmLocationBtn').disabled = false;
+    selectedLat = roundedLat;
+    selectedLng = roundedLng;
+  }
+
+  /* ---- Map Search ---- */
+  var mapSearchBtn = document.getElementById('mapSearchBtn');
+  var mapSearchInput = document.getElementById('mapSearchInput');
+
+  function searchMapLocation() {
+    var query = mapSearchInput ? mapSearchInput.value.trim() : '';
+    if (!query) return;
+
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
+      .then(function (resp) { return resp.json(); })
+      .then(function (data) {
+        if (data && data.length > 0) {
+          var result = data[0];
+          var lat = parseFloat(result.lat);
+          var lng = parseFloat(result.lon);
+          if (mapInstance) {
+            mapInstance.setView([lat, lng], 15);
+          }
+          placeMarker(lat, lng);
+        } else {
+          showToast('Location not found. Try a different search term.', 'warning');
+        }
+      })
+      .catch(function () {
+        showToast('Search failed. Please try again.', 'danger');
+      });
+  }
+
+  if (mapSearchBtn) {
+    mapSearchBtn.addEventListener('click', searchMapLocation);
+  }
+  if (mapSearchInput) {
+    mapSearchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchMapLocation();
+      }
+    });
+  }
+
+  /* ---- Confirm Location ---- */
+  var confirmLocationBtn = document.getElementById('confirmLocationBtn');
+  if (confirmLocationBtn) {
+    confirmLocationBtn.addEventListener('click', function () {
+      if (selectedLat && selectedLng) {
+        document.getElementById('id_latitude').value = selectedLat;
+        document.getElementById('id_longitude').value = selectedLng;
+        document.getElementById('locationDisplay').textContent =
+          'Lat: ' + selectedLat + ', Lng: ' + selectedLng;
+        mapModal.hide();
+      }
+    });
+  }
+
+  /* ---- Clean up map on modal hide ---- */
+  if (mapModalEl) {
+    mapModalEl.addEventListener('hidden.bs.modal', function () {
+      if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+        mapMarker = null;
+      }
+    });
   }
 
   /* ---- Delete ---- */
@@ -262,6 +426,13 @@
     var spinner = document.getElementById('saveCenterBtnSpinner');
     var errorsDiv = document.getElementById('centerFormErrors');
 
+    var lat = document.getElementById('id_latitude').value;
+    var lng = document.getElementById('id_longitude').value;
+    if (!lat || !lng) {
+      showToast('Please select a location on the map.', 'warning');
+      return;
+    }
+
     clearFieldErrors();
     errorsDiv.classList.add('d-none');
     errorsDiv.textContent = '';
@@ -305,6 +476,9 @@
               city: 'id_city',
               district: 'id_district',
               assigned_teacher: 'id_assigned_teacher',
+              latitude: 'id_latitude',
+              longitude: 'id_longitude',
+              allowed_radius: 'id_allowed_radius',
             };
             var firstError = null;
             Object.keys(data.errors).forEach(function (key) {

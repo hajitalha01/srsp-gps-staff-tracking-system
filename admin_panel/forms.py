@@ -66,7 +66,7 @@ class StaffCreationForm(forms.Form):
         }
     )
     assigned_center = forms.ModelChoiceField(
-        queryset=Center.objects.filter(status='Active'),
+        queryset=Center.objects.all(),
         empty_label='Select Center',
         error_messages={'required': 'Assigned center is required.'}
     )
@@ -271,10 +271,26 @@ class CenterForm(forms.Form):
         required=False,
         empty_label='-- Select Teacher --',
     )
+    latitude = forms.DecimalField(
+        max_digits=9, decimal_places=6, required=False,
+        widget=forms.HiddenInput(),
+    )
+    longitude = forms.DecimalField(
+        max_digits=9, decimal_places=6, required=False,
+        widget=forms.HiddenInput(),
+    )
+    allowed_radius = forms.ChoiceField(
+        choices=[(50, '50 meters'), (100, '100 meters'), (150, '150 meters'),
+                 (200, '200 meters'), (300, '300 meters'), (500, '500 meters')],
+        required=False, initial=100,
+        widget=forms.Select(attrs={'class': 'cm-input cm-select'}),
+    )
 
     def __init__(self, *args, **kwargs):
         self.center_id = kwargs.pop('center_id', None)
         super().__init__(*args, **kwargs)
+        self.fields['latitude'].required = False
+        self.fields['longitude'].required = False
 
     def clean_center_name(self):
         value = self.cleaned_data['center_name'].strip()
@@ -298,16 +314,17 @@ class CenterForm(forms.Form):
     def save(self):
         data = self.cleaned_data
         teacher = data.get('assigned_teacher')
-        is_active = teacher is not None
-        status = Center.Status.ACTIVE if is_active else Center.Status.PENDING
 
         center = Center.objects.create(
             center_name=data['center_name'],
             complete_address=data['complete_address'],
             city=data['city'],
             district=data['district'],
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
+            allowed_radius=data.get('allowed_radius', 100),
             assigned_teacher=teacher,
-            status=status,
+            status=Center.Status.ACTIVE,
         )
         return center
 
@@ -315,13 +332,18 @@ class CenterForm(forms.Form):
         data = self.cleaned_data
         center = Center.objects.get(id=center_id)
         teacher = data.get('assigned_teacher')
-        is_active = teacher is not None
 
         center.center_name = data['center_name']
         center.complete_address = data['complete_address']
         center.city = data['city']
         center.district = data['district']
+        if data.get('latitude'):
+            center.latitude = data['latitude']
+        if data.get('longitude'):
+            center.longitude = data['longitude']
+        if data.get('allowed_radius'):
+            center.allowed_radius = data['allowed_radius']
         center.assigned_teacher = teacher
-        center.status = Center.Status.ACTIVE if is_active else Center.Status.PENDING
+        center.status = Center.Status.ACTIVE
         center.save()
         return center

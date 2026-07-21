@@ -18,32 +18,47 @@
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px">
-      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Total staff</p><p style="font-size:22px;font-weight:500;margin:0">{{ total_staff|default:45 }}</p></div>
-      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Present today</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-success)">{{ present_today|default:38 }}</p></div>
-      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Absent today</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ absent_today|default:7 }}</p></div>
-      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Emergency alerts</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ active_alerts|default:2 }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Total staff</p><p style="font-size:22px;font-weight:500;margin:0">{{ total_staff }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Present today</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-success)">{{ present_today }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Absent today</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ absent_today }}</p></div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px"><p style="font-size:12px;color:var(--text-secondary);margin:0 0 6px">Emergency alerts</p><p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ active_alerts }}</p></div>
     </div>
 
-    <div style="background:var(--surface-2);border-radius:8px;padding:16px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-        <p style="font-size:14px;font-weight:500;margin:0">Recent attendance</p>
-        <a href="{% url 'admin_attendance' %}" style="font-size:12px;color:var(--text-accent)">View all</a>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+      <div style="background:var(--surface-2);border-radius:8px;padding:16px">
+        <p style="font-size:14px;font-weight:500;margin:0 0 10px">Present Today</p>
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <tr style="color:var(--text-secondary)"><td style="padding:6px 0">Staff name</td><td>Status</td><td>Time</td></tr>
+          {% for a in present_staff_today %}
+          <tr style="border-top:0.5px solid var(--border)">
+            <td style="padding:6px 0">{{ a.staff.full_name }}</td>
+            <td><span style="background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:20px;font-size:11px">{{ a.status }}</span></td>
+            <td>{{ a.check_in_time|date:"h:i A" }}</td>
+          </tr>
+          {% empty %}
+          <tr style="border-top:0.5px solid var(--border)">
+            <td colspan="3" style="padding:12px 0;text-align:center;color:var(--text-muted);font-size:12px">No attendance records available.</td>
+          </tr>
+          {% endfor %}
+        </table>
       </div>
-      <table style="width:100%;font-size:13px;border-collapse:collapse">
-        <tr style="color:var(--text-secondary)"><td style="padding:6px 0">Staff name</td><td>Center</td><td>Status</td><td>Time</td></tr>
-        {% for a in recent_attendance %}
-        <tr style="border-top:0.5px solid var(--border)">
-          <td style="padding:6px 0">{{ a.staff.full_name }}</td>
-          <td>{{ a.center.center_name|default:"--" }}</td>
-          <td><span style="background:{% if a.status == 'Present' %}var(--bg-success);color:var(--text-success){% elif a.status == 'Late' %}var(--bg-warning);color:var(--text-warning){% else %}var(--bg-danger);color:var(--text-danger){% endif %};padding:2px 8px;border-radius:20px;font-size:11px">{{ a.status }}</span></td>
-          <td>{{ a.check_in_time|date:"h:i A"|default:"-" }}</td>
-        </tr>
-        {% empty %}
-        <tr style="border-top:0.5px solid var(--border)">
-          <td colspan="4" style="padding:12px 0;text-align:center;color:var(--text-muted);font-size:12px">No attendance records for today</td>
-        </tr>
-        {% endfor %}
-      </table>
+      <div style="background:var(--surface-2);border-radius:8px;padding:16px">
+        <p style="font-size:14px;font-weight:500;margin:0 0 10px">Absent Today</p>
+        <table style="width:100%;font-size:13px;border-collapse:collapse">
+          <tr style="color:var(--text-secondary)"><td style="padding:6px 0">Staff name</td><td>Status</td><td>Time</td></tr>
+          {% for s in absent_staff_today %}
+          <tr style="border-top:0.5px solid var(--border)">
+            <td style="padding:6px 0">{{ s.user.full_name }}</td>
+            <td><span style="background:var(--bg-danger);color:var(--text-danger);padding:2px 8px;border-radius:20px;font-size:11px">Absent</span></td>
+            <td>--</td>
+          </tr>
+          {% empty %}
+          <tr style="border-top:0.5px solid var(--border)">
+            <td colspan="3" style="padding:12px 0;text-align:center;color:var(--text-muted);font-size:12px">No attendance records available.</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
     </div>
   </div>
 </div>

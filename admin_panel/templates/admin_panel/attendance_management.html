@@ -250,6 +250,7 @@
                   <th>Working Hours</th>
                   <th>Attendance Status</th>
                   <th>GPS Verified</th>
+                  <th>Face Verification</th>
                   <th class="am-th-action">Action</th>
                 </tr>
               </thead>
@@ -310,6 +311,15 @@
                     {% endif %}
                   </td>
                   <td>
+                    {% if row.verification_status == 'Verified' %}
+                    <span class="am-gps-badge am-gps-verified" title="Face Verified"><i class="bi bi-shield-fill-check" style="color:#22C55E"></i></span>
+                    {% elif row.verification_status == 'Failed' %}
+                    <span class="am-gps-badge am-gps-unverified" title="Verification Failed"><i class="bi bi-shield-fill-x" style="color:#EF4444"></i></span>
+                    {% else %}
+                    <span class="am-gps-badge am-gps-unverified" title="Not Verified"><i class="bi bi-shield" style="color:#9CA3AF"></i></span>
+                    {% endif %}
+                  </td>
+                  <td>
                     <button type="button" class="am-btn-icon view-detail-btn" data-profile-id="{{ row.profile_id }}" title="View Details">
                       <i class="bi bi-eye-fill"></i>
                     </button>
@@ -318,7 +328,7 @@
                 {% endfor %}
                 {% else %}
                 <tr>
-                  <td colspan="11" class="text-center py-5 text-muted empty-state-cell">
+                  <td colspan="12" class="text-center py-5 text-muted empty-state-cell">
                     <i class="bi bi-calendar-check fs-1 d-block mb-3"></i>
                     <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No attendance records found.</h6>
                     <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Attendance records will appear here once staff members check in.</p>

@@ -115,18 +115,17 @@
 
   initCharts();
 
-  // --- Search via filter form ---
+  // --- Auto-submit search on input (debounced) ---
   var searchInput = document.getElementById('reportSearch');
-  var filterForm = document.getElementById('reportFilterForm');
-  var filterSearchInput = document.getElementById('filterSearchInput');
-  if (searchInput && filterForm && filterSearchInput) {
+  var searchForm = searchInput ? searchInput.closest('form') : null;
+
+  if (searchInput && searchForm) {
     var searchTimeout;
     searchInput.addEventListener('input', function () {
-      filterSearchInput.value = searchInput.value.trim();
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(function () {
-        filterForm.submit();
-      }, 500);
+        searchForm.submit();
+      }, 600);
     });
   }
 

@@ -8,6 +8,7 @@ urlpatterns = [
     path('staff/<int:staff_id>/edit/', views.edit_staff_ajax, name='admin_staff_edit'),
     path('staff/<int:staff_id>/delete/', views.delete_staff_ajax, name='admin_staff_delete'),
     path('centers/', views.center_management, name='admin_centers'),
+    path('centers/list/', views.get_centers_list_json, name='admin_centers_list'),
     path('centers/add/', views.add_center_ajax, name='admin_center_add'),
     path('centers/<int:center_id>/edit/', views.edit_center_ajax, name='admin_center_edit'),
     path('centers/<int:center_id>/delete/', views.delete_center_ajax, name='admin_center_delete'),

@@ -141,8 +141,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Total Staff</span>
-                <h3 class="stat-value">{{ total_staff|default:"0" }}</h3>
-                <span class="stat-subtitle">{{ total_staff_subtitle|default:"Active field workers" }}</span>
+                <h3 class="stat-value">{{ total_staff }}</h3>
+                <span class="stat-subtitle">Active field workers</span>
               </div>
             </div>
           </div>
@@ -155,8 +155,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Present Today</span>
-                <h3 class="stat-value">{{ present_today|default:"0" }}</h3>
-                <span class="stat-subtitle">{{ attendance_rate|default:"--" }} attendance rate</span>
+                <h3 class="stat-value">{{ present_today }}</h3>
+                <span class="stat-subtitle">Checked in today</span>
               </div>
             </div>
           </div>
@@ -169,8 +169,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Absent Today</span>
-                <h3 class="stat-value">{{ absent_today|default:"0" }}</h3>
-                <span class="stat-subtitle">{{ absent_rate|default:"--" }} absent rate</span>
+                <h3 class="stat-value">{{ absent_today }}</h3>
+                <span class="stat-subtitle">Not checked in</span>
               </div>
             </div>
           </div>
@@ -183,8 +183,8 @@
               </div>
               <div class="stat-body">
                 <span class="stat-label">Emergency Alerts</span>
-                <h3 class="stat-value">{{ emergency_count|default:"0" }}</h3>
-                <span class="stat-subtitle">{{ emergency_subtitle|default:"Requires attention" }}</span>
+                <h3 class="stat-value">{{ active_alerts }}</h3>
+                <span class="stat-subtitle">Requires attention</span>
               </div>
             </div>
           </div>
@@ -202,7 +202,7 @@
                 <div class="d-flex align-items-center gap-2">
                   <div class="table-title-icon bg-green"><i class="bi bi-check-lg"></i></div>
                   <h5 class="mb-0">Present Today</h5>
-                  <span class="table-count">{{ present_today|default:"0" }}</span>
+                  <span class="table-count">{{ present_today }}</span>
                 </div>
                 <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-primary">View All</a>
               </div>
@@ -216,12 +216,20 @@
                     </tr>
                   </thead>
                   <tbody>
+                    {% for a in present_staff_today %}
+                    <tr>
+                      <td>{{ a.staff.full_name }}</td>
+                      <td><span class="badge bg-success">{{ a.status }}</span></td>
+                      <td>{{ a.check_in_time|date:"h:i A" }}</td>
+                    </tr>
+                    {% empty %}
                     <tr>
                       <td colspan="3" class="text-center py-4 text-muted empty-state-cell">
                         <i class="bi bi-inbox fs-4 d-block mb-2"></i>
                         No attendance records available.
                       </td>
                     </tr>
+                    {% endfor %}
                   </tbody>
                 </table>
               </div>
@@ -235,7 +243,7 @@
                 <div class="d-flex align-items-center gap-2">
                   <div class="table-title-icon bg-red"><i class="bi bi-x-lg"></i></div>
                   <h5 class="mb-0">Absent Today</h5>
-                  <span class="table-count" style="background:#FBE6E4;color:#C0392B;">{{ absent_today|default:"0" }}</span>
+                  <span class="table-count" style="background:#FBE6E4;color:#C0392B;">{{ absent_today }}</span>
                 </div>
                 <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-primary">View All</a>
               </div>
@@ -249,12 +257,20 @@
                     </tr>
                   </thead>
                   <tbody>
+                    {% for s in absent_staff_today %}
+                    <tr>
+                      <td>{{ s.user.full_name }}</td>
+                      <td><span class="badge bg-danger">Absent</span></td>
+                      <td>--</td>
+                    </tr>
+                    {% empty %}
                     <tr>
                       <td colspan="3" class="text-center py-4 text-muted empty-state-cell">
                         <i class="bi bi-inbox fs-4 d-block mb-2"></i>
                         No attendance records available.
                       </td>
                     </tr>
+                    {% endfor %}
                   </tbody>
                 </table>
               </div>

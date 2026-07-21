@@ -190,7 +190,7 @@
     if (!tableBody) return;
     const rows = data.rows || [];
     if (rows.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="11" class="text-center py-5 text-muted empty-state-cell">' +
+      tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-5 text-muted empty-state-cell">' +
         '<i class="bi bi-calendar-check fs-1 d-block mb-3"></i>' +
         '<h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No attendance records found.</h6>' +
         '<p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Attendance records will appear here once staff members check in.</p></td></tr>';
@@ -225,6 +225,16 @@
         ? '<span class="am-gps-badge am-gps-verified" title="GPS Verified"><i class="bi bi-geo-alt-fill"></i></span>'
         : '<span class="am-gps-badge am-gps-unverified" title="GPS Not Verified"><i class="bi bi-geo-alt-fill"></i></span>';
 
+      const v = a ? a.verification_status : '--';
+      let verHtml = '';
+      if (v === 'Verified') {
+        verHtml = '<span class="am-gps-badge am-gps-verified" title="Face Verified"><i class="bi bi-shield-fill-check" style="color:#22C55E"></i></span>';
+      } else if (v === 'Failed') {
+        verHtml = '<span class="am-gps-badge am-gps-unverified" title="Verification Failed"><i class="bi bi-shield-fill-x" style="color:#EF4444"></i></span>';
+      } else {
+        verHtml = '<span class="am-gps-badge am-gps-unverified" title="Not Verified"><i class="bi bi-shield" style="color:#9CA3AF"></i></span>';
+      }
+
       const centerName = p.center || '-';
       const districtName = p.district || '-';
 
@@ -239,6 +249,7 @@
         <td><span class="am-hours">${hours}</span></td>
         <td>${statusBadge}</td>
         <td>${gpsHtml}</td>
+        <td>${verHtml}</td>
         <td><button type="button" class="am-btn-icon view-detail-btn" data-profile-id="${p.id}" title="View Details"><i class="bi bi-eye-fill"></i></button></td>
       </tr>`;
     });
