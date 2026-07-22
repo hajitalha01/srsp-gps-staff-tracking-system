@@ -270,44 +270,272 @@
     selectedLng = roundedLng;
   }
 
-  /* ---- Map Search ---- */
-  var mapSearchBtn = document.getElementById('mapSearchBtn');
+  /* ---- Professional Map Search (Photon + Nominatim fallback) ---- */
   var mapSearchInput = document.getElementById('mapSearchInput');
+  var mapSuggestions = document.getElementById('mapSuggestions');
+  var mapSearchSpinner = document.getElementById('mapSearchSpinner');
+  var searchDebounceTimer = null;
+  var searchAbortController = null;
 
-  function searchMapLocation() {
-    var query = mapSearchInput ? mapSearchInput.value.trim() : '';
-    if (!query) return;
+  function doGeocode(query) {
+    if (searchAbortController) {
+      searchAbortController.abort();
+    }
+    searchAbortController = new AbortController();
+    var signal = searchAbortController.signal;
 
-    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
-      .then(function (resp) { return resp.json(); })
-      .then(function (data) {
-        if (data && data.length > 0) {
-          var result = data[0];
-          var lat = parseFloat(result.lat);
-          var lng = parseFloat(result.lon);
-          if (mapInstance) {
-            mapInstance.setView([lat, lng], 15);
-          }
-          placeMarker(lat, lng);
-        } else {
-          showToast('Location not found. Try a different search term.', 'warning');
-        }
+    var photonUrl = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(query) + '&limit=5&lang=en&bbox=60.87,23.69,77.84,37.08';
+
+    return fetch(photonUrl, { signal: signal })
+      .then(function (resp) {
+        if (!resp.ok) throw new Error('Photon failed');
+        return resp.json();
       })
-      .catch(function () {
-        showToast('Search failed. Please try again.', 'danger');
+      .then(function (data) {
+        if (data && data.features && data.features.length > 0) {
+          return data.features
+            .filter(function (f) {
+              var props = f.properties || {};
+              var country = (props.country || '').toLowerCase();
+              var countrycode = (props.countrycode || '').toLowerCase();
+              return countrycode === 'pk' || country.indexOf('pakistan') !== -1;
+            })
+            .map(function (f) {
+            var props = f.properties || {};
+            var coords = f.geometry && f.geometry.coordinates;
+            var label = [
+              props.name,
+              props.street || '',
+              props.city || props.town || props.village || '',
+              props.state || '',
+              'Pakistan'
+            ].filter(Boolean).join(', ');
+            return {
+              label: label || props.name || 'Unknown',
+              name: props.name || '',
+              city: props.city || props.town || props.village || '',
+              state: props.state || '',
+              country: 'Pakistan',
+              type: props.osm_value || props.type || '',
+              lat: coords ? coords[1] : null,
+              lng: coords ? coords[0] : null
+            };
+          });
+        }
+        throw new Error('No results from Photon');
+      })
+      .catch(function (err) {
+        if (err.name === 'AbortError') throw err;
+        return fallbackNominatim(query);
       });
   }
 
-  if (mapSearchBtn) {
-    mapSearchBtn.addEventListener('click', searchMapLocation);
+  function fallbackNominatim(query) {
+    var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&addressdetails=1&countrycodes=pk';
+    return fetch(url)
+      .then(function (resp) {
+        if (!resp.ok) throw new Error('Nominatim failed');
+        return resp.json();
+      })
+      .then(function (data) {
+        if (data && data.length > 0) {
+          return data
+            .filter(function (item) {
+              var country = (item.address && item.address.country) || '';
+              var countryCode = (item.address && item.address.country_code) || '';
+              return countryCode === 'pk' || country.toLowerCase().indexOf('pakistan') !== -1;
+            })
+            .map(function (item) {
+            var addr = item.address || {};
+            var parts = [
+              addr.road || addr.pedestrian || addr.footway || '',
+              addr.suburb || addr.neighbourhood || '',
+              addr.city || addr.town || addr.village || addr.county || '',
+              addr.state || '',
+              'Pakistan'
+            ].filter(Boolean);
+            var label = parts.length > 0 ? parts.join(', ') : item.display_name;
+            return {
+              label: label,
+              name: item.name || parts[0] || '',
+              city: addr.city || addr.town || addr.village || addr.county || '',
+              state: addr.state || '',
+              country: 'Pakistan',
+              type: item.type || 'place',
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            };
+          });
+        }
+        throw new Error('No results from Nominatim');
+      });
   }
+
+  function renderSuggestions(results) {
+    mapSuggestions.innerHTML = '';
+    mapSuggestions.classList.remove('d-none');
+
+    var list = document.createElement('div');
+    list.className = 'map-suggestions-list';
+
+    results.forEach(function (item) {
+      var el = document.createElement('div');
+      el.className = 'map-suggestion-item';
+      el.setAttribute('data-lat', item.lat);
+      el.setAttribute('data-lng', item.lng);
+
+      var typeLabel = item.type ? item.type.replace(/_/g, ' ') : 'location';
+      var icon = getTypeIcon(item.type);
+
+      el.innerHTML =
+        '<div class="suggestion-icon"><i class="bi ' + icon + '"></i></div>' +
+        '<div class="suggestion-info">' +
+          '<div class="suggestion-name">' + escapeHtml(item.label) + '</div>' +
+          '<div class="suggestion-type">' + escapeHtml(typeLabel) + '</div>' +
+        '</div>';
+
+      el.addEventListener('click', function () {
+        selectSuggestion(item);
+      });
+
+      list.appendChild(el);
+    });
+
+    mapSuggestions.appendChild(list);
+  }
+
+  function showNoResults() {
+    mapSuggestions.innerHTML = '';
+    mapSuggestions.classList.remove('d-none');
+    mapSuggestions.innerHTML = '<div class="map-suggestions-empty"><i class="bi bi-search"></i> No locations found.</div>';
+  }
+
+  function showSearchError() {
+    mapSuggestions.innerHTML = '';
+    mapSuggestions.classList.remove('d-none');
+    mapSuggestions.innerHTML = '<div class="map-suggestions-empty map-suggestions-error"><i class="bi bi-exclamation-circle"></i> Unable to search location. Please try again.</div>';
+  }
+
+  function getTypeIcon(type) {
+    if (!type) return 'bi-geo-alt';
+    var t = type.toLowerCase();
+    if (t.indexOf('school') !== -1 || t.indexOf('university') !== -1 || t.indexOf('college') !== -1) return 'bi-mortarboard-fill';
+    if (t.indexOf('hospital') !== -1 || t.indexOf('clinic') !== -1) return 'bi-hospital';
+    if (t.indexOf('office') !== -1 || t.indexOf('government') !== -1) return 'bi-building';
+    if (t.indexOf('park') !== -1 || t.indexOf('landmark') !== -1) return 'bi-signpost-2';
+    if (t.indexOf('street') !== -1 || t.indexOf('road') !== -1) return 'bi-signpost';
+    if (t.indexOf('village') !== -1 || t.indexOf('suburb') !== -1) return 'bi-house-door';
+    if (t.indexOf('city') !== -1 || t.indexOf('town') !== -1) return 'bi-building';
+    return 'bi-geo-alt';
+  }
+
+  function selectSuggestion(item) {
+    mapSuggestions.classList.add('d-none');
+    mapSearchInput.value = item.label;
+    if (item.lat && item.lng && mapInstance) {
+      mapInstance.setView([item.lat, item.lng], 16);
+      placeMarker(item.lat, item.lng);
+    }
+  }
+
+  function doSearchOnEnter() {
+    var query = mapSearchInput ? mapSearchInput.value.trim() : '';
+    if (!query) return;
+    mapSuggestions.classList.add('d-none');
+    mapSearchSpinner.classList.remove('d-none');
+
+    doGeocode(query)
+      .then(function (results) {
+        mapSearchSpinner.classList.add('d-none');
+        if (results && results.length > 0) {
+          selectSuggestion(results[0]);
+        } else {
+          showToast('No locations found.', 'warning');
+        }
+      })
+      .catch(function (err) {
+        if (err.name === 'AbortError') return;
+        mapSearchSpinner.classList.add('d-none');
+        showToast('Unable to search location. Please try again.', 'danger');
+      });
+  }
+
   if (mapSearchInput) {
+    mapSearchInput.addEventListener('input', function () {
+      clearTimeout(searchDebounceTimer);
+      var query = mapSearchInput.value.trim();
+      if (query.length < 2) {
+        mapSuggestions.classList.add('d-none');
+        return;
+      }
+      searchDebounceTimer = setTimeout(function () {
+        mapSearchSpinner.classList.remove('d-none');
+        doGeocode(query)
+          .then(function (results) {
+            mapSearchSpinner.classList.add('d-none');
+            if (results && results.length > 0) {
+              renderSuggestions(results);
+            } else {
+              showNoResults();
+            }
+          })
+          .catch(function (err) {
+            if (err.name === 'AbortError') return;
+            mapSearchSpinner.classList.add('d-none');
+            showSearchError();
+          });
+      }, 350);
+    });
+
     mapSearchInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        searchMapLocation();
+        var activeItem = mapSuggestions.querySelector('.suggestion-highlighted');
+        if (activeItem) {
+          activeItem.click();
+          return;
+        }
+        mapSuggestions.classList.add('d-none');
+        doSearchOnEnter();
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateSuggestions(1);
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateSuggestions(-1);
+      }
+      if (e.key === 'Escape') {
+        mapSuggestions.classList.add('d-none');
       }
     });
+
+    mapSearchInput.addEventListener('blur', function () {
+      setTimeout(function () { mapSuggestions.classList.add('d-none'); }, 200);
+    });
+
+    mapSearchInput.addEventListener('focus', function () {
+      if (mapSuggestions.children.length > 0) {
+        mapSuggestions.classList.remove('d-none');
+      }
+    });
+  }
+
+  function navigateSuggestions(dir) {
+    var items = mapSuggestions.querySelectorAll('.map-suggestion-item');
+    if (!items.length) return;
+    var current = mapSuggestions.querySelector('.suggestion-highlighted');
+    var idx = -1;
+    if (current) {
+      current.classList.remove('suggestion-highlighted');
+      idx = Array.prototype.indexOf.call(items, current);
+    }
+    idx += dir;
+    if (idx < 0) idx = items.length - 1;
+    if (idx >= items.length) idx = 0;
+    items[idx].classList.add('suggestion-highlighted');
+    items[idx].scrollIntoView({ block: 'nearest' });
   }
 
   /* ---- Confirm Location ---- */

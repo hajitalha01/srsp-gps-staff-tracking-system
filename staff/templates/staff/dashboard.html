@@ -387,8 +387,14 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function performCheckIn() {
-    console.log('DEBUG: performCheckIn() called');
-    console.log('DEBUG: Sending POST to checkin endpoint');
+    var body = {
+      verification_status: 'Verified',
+      verification_method: 'Face Verification'
+    };
+    if (currentGPSPosition) {
+      body.latitude = currentGPSPosition.latitude;
+      body.longitude = currentGPSPosition.longitude;
+    }
     fetch('{% url "staff_checkin" %}', {
       method: 'POST',
       headers: {
@@ -396,10 +402,7 @@ document.addEventListener('DOMContentLoaded', function(){
         'X-CSRFToken': getCSRFToken(),
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({
-        verification_status: 'Verified',
-        verification_method: 'Face Verification'
-      })
+      body: JSON.stringify(body)
     })
     .then(function(resp) { return resp.json(); })
     .then(function(data) {
@@ -409,6 +412,8 @@ document.addEventListener('DOMContentLoaded', function(){
         checkInBtn.dataset.checkedIn = 'true';
         updateButtons();
         updateAttendanceDisplay({ check_in_time: data.check_in_time });
+        currentGPSPosition = null;
+        isGPSVerified = false;
       } else {
         showToast(data.error, 'error');
       }
@@ -419,6 +424,14 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   function performCheckOut() {
+    var body = {
+      verification_status: 'Verified',
+      verification_method: 'Face Verification'
+    };
+    if (currentGPSPosition) {
+      body.latitude = currentGPSPosition.latitude;
+      body.longitude = currentGPSPosition.longitude;
+    }
     fetch('{% url "staff_checkout" %}', {
       method: 'POST',
       headers: {
@@ -426,10 +439,7 @@ document.addEventListener('DOMContentLoaded', function(){
         'X-CSRFToken': getCSRFToken(),
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({
-        verification_status: 'Verified',
-        verification_method: 'Face Verification'
-      })
+      body: JSON.stringify(body)
     })
     .then(function(resp) { return resp.json(); })
     .then(function(data) {
@@ -443,6 +453,8 @@ document.addEventListener('DOMContentLoaded', function(){
           check_out_time: data.check_out_time,
           working_hours: data.working_hours
         });
+        currentGPSPosition = null;
+        isGPSVerified = false;
       } else {
         showToast(data.error, 'error');
       }
@@ -452,14 +464,95 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
+  var currentGPSPosition = null;
+  var isGPSVerified = false;
+
+  function getGPSPosition() {
+    return new Promise(function(resolve, reject) {
+      if (!navigator.geolocation) {
+        reject({ code: 'UNSUPPORTED', message: 'Browser does not support geolocation. Please use a modern browser.' });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude
+          });
+        },
+        function(err) {
+          var messages = {
+            1: 'Location permission denied. Please allow location access in your browser settings and try again.',
+            2: 'GPS location unavailable. Please enable GPS on your device and try again.',
+            3: 'GPS request timed out. Please try again in a location with better GPS signal.'
+          };
+          reject({
+            code: err.code,
+            message: messages[err.code] || 'Unable to get your location. Please try again.'
+          });
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    });
+  }
+
+  function verifyLocation(latitude, longitude) {
+    return fetch('{% url "staff_verify_location" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ latitude: latitude, longitude: longitude })
+    }).then(function(resp) { return resp.json(); });
+  }
+
+  function handleAttendanceAction(action) {
+    if (action !== 'checkin' && action !== 'checkout') return;
+
+    showToast('Getting your GPS location...', 'success');
+
+    getGPSPosition()
+      .then(function(pos) {
+        currentGPSPosition = pos;
+        return verifyLocation(pos.latitude, pos.longitude);
+      })
+      .then(function(data) {
+        if (data.success && data.inside) {
+          showToast('Location verified! You are within the allowed area.', 'success');
+          isGPSVerified = true;
+          setTimeout(function() {
+            openModal(action);
+          }, 600);
+        } else if (data.success && !data.inside) {
+          showToast(
+            'You are outside your assigned center. Please move inside your assigned center before marking attendance.',
+            'error'
+          );
+          currentGPSPosition = null;
+          isGPSVerified = false;
+        } else {
+          showToast(data.error || 'Location verification failed.', 'error');
+          currentGPSPosition = null;
+          isGPSVerified = false;
+        }
+      })
+      .catch(function(err) {
+        showToast(err.message || 'Unable to verify your location.', 'error');
+        currentGPSPosition = null;
+        isGPSVerified = false;
+      });
+  }
+
   checkInBtn.addEventListener('click', function() {
     if (this.disabled) return;
-    openModal('checkin');
+    handleAttendanceAction('checkin');
   });
 
   checkOutBtn.addEventListener('click', function() {
     if (this.disabled) return;
-    openModal('checkout');
+    handleAttendanceAction('checkout');
   });
 
   captureBtn.addEventListener('click', captureSelfie);

@@ -102,6 +102,11 @@
     const hours = a && a.working_hours ? a.working_hours : '--';
 
     const gpsVerified = a && a.gps_verified;
+    const distanceFromCenter = a && a.distance_from_center ? a.distance_from_center : '--';
+    const checkInLat = a && a.check_in_latitude ? a.check_in_latitude : '--';
+    const checkInLng = a && a.check_in_longitude ? a.check_in_longitude : '--';
+    const checkOutLat = a && a.check_out_latitude ? a.check_out_latitude : '--';
+    const checkOutLng = a && a.check_out_longitude ? a.check_out_longitude : '--';
     const phone = p.phone || '--';
     const cnic = p.cnic || '--';
     const centerName = p.center || '--';
@@ -133,7 +138,10 @@
             <div class="col-4"><label class="text-muted small mb-1">Check-in Time</label><div class="fw-medium">${checkIn}</div></div>
             <div class="col-4"><label class="text-muted small mb-1">Check-out Time</label><div class="fw-medium">${checkOut}</div></div>
             <div class="col-4"><label class="text-muted small mb-1">Working Hours</label><div class="fw-medium">${hours}</div></div>
-            <div class="col-6"><label class="text-muted small mb-1">GPS Verified</label><div class="fw-medium">${gpsVerified ? '<span class="am-gps-badge am-gps-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>' : '<span class="am-gps-badge am-gps-unverified"><i class="bi bi-x-circle-fill"></i> Not Verified</span>'}</div></div>
+            <div class="col-4"><label class="text-muted small mb-1">GPS Verified</label><div class="fw-medium">${gpsVerified ? '<span class="am-gps-badge am-gps-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>' : '<span class="am-gps-badge am-gps-unverified"><i class="bi bi-x-circle-fill"></i> Not Verified</span>'}</div></div>
+            <div class="col-4"><label class="text-muted small mb-1">Distance From Center</label><div class="fw-medium">${distanceFromCenter !== '--' ? distanceFromCenter + 'm' : '--'}</div></div>
+            <div class="col-4"><label class="text-muted small mb-1">Check-In Coordinates</label><div class="fw-medium" style="font-size:0.8rem">${checkInLat}, ${checkInLng}</div></div>
+            <div class="col-6"><label class="text-muted small mb-1">Check-Out Coordinates</label><div class="fw-medium" style="font-size:0.8rem">${checkOutLat}, ${checkOutLng}</div></div>
             ${hasEmergency ? `<div class="col-6"><label class="text-muted small mb-1">Today's Emergencies</label><div class="fw-medium"><a href="#" onclick="event.preventDefault();document.getElementById('attendanceDetailModal').querySelector('.btn-close').click();setTimeout(function(){var m=new bootstrap.Modal(document.getElementById('emergencyAlertsModal'));m.show();fetch('/panel/alerts/json/?staff_id=${p.id}&date=today').then(r=>r.json()).then(d=>{var b=document.getElementById('emergencyAlertsBody');if(d.error){b.innerHTML='<div class=\\\\'alert alert-danger m-3\\\\'>'+d.error+'</div>';return;}b.innerHTML=buildEmergencyList(d);}).catch(()=>{document.getElementById('emergencyAlertsBody').innerHTML='<div class=\\\\'alert alert-danger m-3\\\\'>Failed to load.</div>';});},300);" style="color:var(--red-500);text-decoration:none;"><i class="bi bi-exclamation-triangle-fill me-1"></i>View ${eCount} Alert${eCount > 1 ? 's' : ''}</a></div></div>` : ''}
           </div>
         </div>
@@ -190,7 +198,7 @@
     if (!tableBody) return;
     const rows = data.rows || [];
     if (rows.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="12" class="text-center py-5 text-muted empty-state-cell">' +
+      tableBody.innerHTML = '<tr><td colspan="17" class="text-center py-5 text-muted empty-state-cell">' +
         '<i class="bi bi-calendar-check fs-1 d-block mb-3"></i>' +
         '<h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No attendance records found.</h6>' +
         '<p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Attendance records will appear here once staff members check in.</p></td></tr>';
@@ -225,6 +233,14 @@
         ? '<span class="am-gps-badge am-gps-verified" title="GPS Verified"><i class="bi bi-geo-alt-fill"></i></span>'
         : '<span class="am-gps-badge am-gps-unverified" title="GPS Not Verified"><i class="bi bi-geo-alt-fill"></i></span>';
 
+      const distance = a && a.distance_from_center ? a.distance_from_center : '--';
+      const distanceHtml = distance !== '--' ? distance + 'm' : '--';
+
+      const checkInLat = a && a.check_in_latitude ? a.check_in_latitude : '--';
+      const checkInLng = a && a.check_in_longitude ? a.check_in_longitude : '--';
+      const checkOutLat = a && a.check_out_latitude ? a.check_out_latitude : '--';
+      const checkOutLng = a && a.check_out_longitude ? a.check_out_longitude : '--';
+
       const v = a ? a.verification_status : '--';
       let verHtml = '';
       if (v === 'Verified') {
@@ -249,6 +265,11 @@
         <td><span class="am-hours">${hours}</span></td>
         <td>${statusBadge}</td>
         <td>${gpsHtml}</td>
+        <td><span class="am-time">${distanceHtml}</span></td>
+        <td><span class="am-time">${checkInLat}</span></td>
+        <td><span class="am-time">${checkInLng}</span></td>
+        <td><span class="am-time">${checkOutLat}</span></td>
+        <td><span class="am-time">${checkOutLng}</span></td>
         <td>${verHtml}</td>
         <td><button type="button" class="am-btn-icon view-detail-btn" data-profile-id="${p.id}" title="View Details"><i class="bi bi-eye-fill"></i></button></td>
       </tr>`;
