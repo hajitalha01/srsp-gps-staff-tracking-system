@@ -27,4 +27,7 @@ urlpatterns = [
     path('notifications/', views.notifications_settings, name='admin_notifications'),
     path('profile/', views.profile_settings, name='admin_profile'),
     path('settings/', views.profile_settings, name='admin_settings'),
+    path('location-requests/', views.location_change_requests, name='admin_location_requests'),
+    path('location-requests/<int:request_id>/approve/', views.approve_location_change, name='admin_approve_location'),
+    path('location-requests/<int:request_id>/reject/', views.reject_location_change, name='admin_reject_location'),
 ]

@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timedelta
 from functools import wraps
 
+from django.conf import settings
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -12,7 +13,8 @@ from django.db import models
 from django.db.models import Count, Q, Avg, Value, CharField, Case, When
 from django.db.models.functions import TruncMonth, Coalesce
 
-from admin_panel.models import Center, EmergencyAlert, Notification, Attendance
+from admin_panel.models import Center, EmergencyAlert, Notification, Attendance, CenterLocationChangeRequest, AuditLog
+from django.db.models import Count
 from accounts.models import CustomUser
 from staff.models import StaffProfile
 from admin_panel.forms import StaffCreationForm, StaffEditForm, CenterForm
@@ -52,6 +54,7 @@ def dashboard(request):
 
     absent_count = absent_records.count()
     active_alerts = EmergencyAlert.objects.filter(status=EmergencyAlert.Status.PENDING).count()
+    pending_location_requests = CenterLocationChangeRequest.objects.filter(status='Pending').count()
 
     return render(request, 'admin_panel/dashboard.html', {
         'user_role': user.role,
@@ -60,6 +63,7 @@ def dashboard(request):
         'present_today': present_count,
         'absent_today': absent_count,
         'active_alerts': active_alerts,
+        'pending_location_requests': pending_location_requests,
         'present_staff_today': present_records,
         'absent_staff_today': absent_records,
     })
@@ -251,6 +255,7 @@ def center_management(request):
         'filtered': has_filter,
         'user_role': user.role,
         'user_initials': get_initials(user.full_name),
+        'geoapify_api_key': settings.GEOAPIFY_API_KEY,
     })
 
 
@@ -348,6 +353,7 @@ def delete_center_ajax(request, center_id):
 
 def serialize_center(center):
     teacher = center.assigned_teacher
+    config_by = center.configured_by
     return {
         'id': center.id,
         'center_name': center.center_name,
@@ -361,6 +367,11 @@ def serialize_center(center):
         'assigned_teacher': teacher.id if teacher else None,
         'assigned_teacher_name': teacher.user.full_name if teacher else 'Pending',
         'status': center.status,
+        'configuration_status': center.configuration_status,
+        'configured_by': config_by.full_name if config_by else None,
+        'configured_date': center.configured_date.strftime('%Y-%m-%d %I:%M %p') if center.configured_date else None,
+        'gps_accuracy': center.gps_accuracy,
+        'has_assigned_teacher': teacher is not None,
     }
 
 
@@ -1246,6 +1257,116 @@ def notifications_settings(request):
 @user_passes_test(admin_required)
 def profile_settings(request):
     return render(request, 'admin_panel/profile_settings.html')
+
+
+@login_required
+@user_passes_test(admin_required)
+def location_change_requests(request):
+    user = request.user
+    q = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    requests_qs = CenterLocationChangeRequest.objects.select_related(
+        'teacher', 'center', 'approved_by'
+    ).all()
+
+    if q:
+        requests_qs = requests_qs.filter(
+            Q(teacher__full_name__icontains=q) |
+            Q(center__center_name__icontains=q) |
+            Q(reason__icontains=q)
+        )
+    if status_filter:
+        requests_qs = requests_qs.filter(status=status_filter)
+
+    return render(request, 'admin_panel/location_change_requests.html', {
+        'requests': requests_qs,
+        'total_requests': requests_qs.count(),
+        'pending_count': requests_qs.filter(status='Pending').count(),
+        'approved_count': requests_qs.filter(status='Approved').count(),
+        'rejected_count': requests_qs.filter(status='Rejected').count(),
+        'q': q,
+        'selected_status': status_filter,
+        'filtered': bool(q or status_filter),
+        'user_role': user.role,
+        'user_initials': get_initials(user.full_name),
+    })
+
+
+@login_required
+@user_passes_test(admin_required)
+def approve_location_change(request, request_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+    try:
+        req = CenterLocationChangeRequest.objects.select_related('teacher', 'center').get(id=request_id)
+    except CenterLocationChangeRequest.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Request not found.'})
+
+    if req.status != 'Pending':
+        return JsonResponse({'success': False, 'error': 'Request has already been processed.'})
+
+    req.status = 'Approved'
+    req.approved_by = request.user
+    req.approved_date = timezone.now()
+    req.used_permission = True
+    req.save()
+
+    center = req.center
+    if req.new_latitude and req.new_longitude:
+        center.latitude = req.new_latitude
+        center.longitude = req.new_longitude
+        center.configured_by = req.teacher
+        center.configured_date = timezone.now()
+        center.save()
+
+    AuditLog.objects.create(
+        action='Request Approved',
+        user=request.user,
+        details=f'Location change request #{req.id} for {req.center.center_name} by {req.teacher.full_name} approved. Coordinates updated.',
+        ip_address=get_client_ip(request),
+        browser_info=request.META.get('HTTP_USER_AGENT', ''),
+    )
+
+    return JsonResponse({'success': True, 'message': 'Location change request approved. Center coordinates updated.'})
+
+
+@login_required
+@user_passes_test(admin_required)
+def reject_location_change(request, request_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+    try:
+        req = CenterLocationChangeRequest.objects.select_related('teacher', 'center').get(id=request_id)
+    except CenterLocationChangeRequest.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Request not found.'})
+
+    if req.status != 'Pending':
+        return JsonResponse({'success': False, 'error': 'Request has already been processed.'})
+
+    req.status = 'Rejected'
+    req.approved_by = request.user
+    req.approved_date = timezone.now()
+    req.save()
+
+    AuditLog.objects.create(
+        action='Request Rejected',
+        user=request.user,
+        details=f'Location change request #{req.id} for {req.center.center_name} by {req.teacher.full_name} rejected.',
+        ip_address=get_client_ip(request),
+        browser_info=request.META.get('HTTP_USER_AGENT', ''),
+    )
+
+    return JsonResponse({'success': True, 'message': 'Location change request rejected.'})
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR', '')
+    return ip
 
 
 @login_required

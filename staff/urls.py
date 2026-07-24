@@ -10,4 +10,8 @@ urlpatterns = [
     path('attendance/checkout/', views.check_out, name='staff_checkout'),
     path('emergency/', views.send_emergency_alert, name='staff_emergency'),
     path('history/', views.history, name='staff_history'),
+    path('center-settings/', views.center_settings, name='staff_center_settings'),
+    path('center-settings/configure/', views.configure_center, name='staff_configure_center'),
+    path('center-settings/request-change/', views.request_location_change, name='staff_request_location_change'),
+    path('settings/', views.settings_page, name='staff_settings'),
 ]

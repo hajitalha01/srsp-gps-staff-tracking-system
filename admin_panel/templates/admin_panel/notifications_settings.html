@@ -1,165 +1,73 @@
-<!DOCTYPE html>
+{% extends 'base.html' %}
 {% load static %}
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notifications — Admin</title>
+{% block title %}Notifications — Admin{% endblock %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/notifications.css' %}">
+{% endblock %}
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='notifications' %}
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
 
-  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
-  <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
-</head>
-<body>
-
-  <div class="dash-wrapper">
-
-    <aside class="dash-sidebar" id="sidebar">
-
-      <div class="sidebar-brand">
-        <div class="brand-icon">
-          <i class="bi bi-heart-pulse-fill"></i>
-        </div>
-        <span class="brand-text">NGO System</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <h3 style="font-size:18px;margin:0">Notifications</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin:2px 0 0">All system notifications</p>
       </div>
-
-      <nav class="sidebar-nav">
-        <ul class="nav-list">
-          <li><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-          <li><a href="{% url 'admin_staff' %}" class="nav-link"><i class="bi bi-people"></i><span>Staff Management</span></a></li>
-          <li><a href="{% url 'admin_centers' %}" class="nav-link"><i class="bi bi-building"></i><span>Center Management</span></a></li>
-          <li><a href="{% url 'admin_attendance' %}" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance</span></a></li>
-          <li><a href="{% url 'admin_reports' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a></li>
-          <li><a href="{% url 'admin_alerts' %}" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span>Emergency Alerts</span></a></li>
-          <li><a href="{% url 'admin_notifications' %}" class="nav-link active"><i class="bi bi-bell"></i><span>Notifications</span></a></li>
-          <li><a href="{% url 'admin_profile' %}" class="nav-link"><i class="bi bi-person-circle"></i><span>Profile</span></a></li>
-          <li><a href="{% url 'admin_settings' %}" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
-        </ul>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="{% url 'login' %}" class="nav-link logout-link">
-          <i class="bi bi-box-arrow-right"></i><span>Logout</span>
-        </a>
+      <div style="display:flex;align-items:center;gap:10px">
+        <a href="{% url 'admin_notifications' %}" style="text-decoration:none;color:inherit"><i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary)"></i></a>
+        <a href="{% url 'admin_alerts' %}" style="text-decoration:none;color:inherit"><i class="ti ti-alert-triangle" style="font-size:18px;color:var(--text-danger)"></i></a>
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-accent)">{{ user_initials|default:"AD" }}</div>
       </div>
+    </div>
 
-    </aside>
-
-    <div class="dash-main">
-
-      <header class="dash-topbar">
-
-        <div class="topbar-left">
-          <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle sidebar">
-            <i class="bi bi-list"></i>
-          </button>
-          <div class="topbar-title">
-            <h4>Notifications</h4>
-            <p>All system notifications</p>
-          </div>
-        </div>
-
-        <div class="topbar-right">
-
-          <a href="{% url 'admin_notifications' %}" class="topbar-icon-btn position-relative" title="Notifications">
-            <i class="bi bi-bell-fill"></i>
-            <span class="badge-count">{{ unread_notifications_count }}</span>
-          </a>
-
-          <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
-            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-            <span class="badge-count" style="background:#EF4444;">{{ emergency_alerts_count|default:"0" }}</span>
-          </a>
-
-          <div class="topbar-separator"></div>
-
-          <div class="date-picker">
-            <i class="bi bi-calendar3"></i>
-            <span id="currentDate"></span>
-          </div>
-
-          <div class="topbar-separator"></div>
-
-          <div class="dropdown">
-            <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="profile-avatar">{{ user_initials|default:"AD" }}</div>
-              <div class="profile-info d-none d-md-block">
-                <span class="profile-name">{{ user.get_full_name|default:"Admin" }}</span>
-                <span class="profile-role">{{ user_role|default:"Administrator" }}</span>
-              </div>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
-              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_profile' %}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
-              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_notifications' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><a class="dropdown-item py-2 px-3 text-danger" href="{% url 'login' %}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-            </ul>
-          </div>
-
-        </div>
-
-      </header>
-
-      <div class="dash-content">
-
-        <div class="nt-page-header">
-          <div>
-            <h3 class="nt-page-title">Notifications</h3>
-            <p class="nt-page-subtitle">All system notifications</p>
-          </div>
-        </div>
-
-        <div class="nt-card">
-          {% if notifications %}
-            {% for n in notifications %}
-            <div class="nt-row {% if not n.is_read %}nt-row-unread{% endif %}">
-              <div class="nt-icon nt-icon-{{ n.notification_type|default:'info' }}">
-                {% if n.notification_type == 'emergency' %}
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                {% elif n.notification_type == 'attendance' %}
-                <i class="bi bi-calendar-check-fill"></i>
-                {% else %}
-                <i class="bi bi-info-circle-fill"></i>
-                {% endif %}
-              </div>
-              <div class="nt-body">
-                <span class="nt-type">{{ n.get_notification_type_display }}</span>
-                <span class="nt-message">{{ n.message }}</span>
-              </div>
-              <span class="nt-time">{{ n.created_at|timesince }} ago</span>
-              <span class="nt-status-dot" title="{% if n.is_read %}Read{% else %}Unread{% endif %}">
-                {% if not n.is_read %}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#EF4444;"></span>{% endif %}
-              </span>
-            </div>
-            {% endfor %}
-          {% else %}
-          <div class="d-flex flex-column align-items-center text-center py-5 text-muted empty-state-cell">
-            <i class="bi bi-bell-slash fs-1 d-block mb-3" style="color:var(--gray-400);"></i>
-            <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No notifications found.</h6>
-            <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;max-width:380px;">Notifications will appear here when the system starts sending alerts.</p>
-          </div>
-          {% endif %}
-        </div>
-
+    <div class="nt-page-header">
+      <div>
+        <h3 class="nt-page-title">Notifications</h3>
+        <p class="nt-page-subtitle">All system notifications</p>
       </div>
+    </div>
 
+    <div class="nt-card">
+      {% if notifications %}
+        {% for n in notifications %}
+        <div class="nt-row {% if not n.is_read %}nt-row-unread{% endif %}">
+          <div class="nt-icon nt-icon-{{ n.notification_type|default:'info' }}">
+            {% if n.notification_type == 'emergency' %}
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            {% elif n.notification_type == 'attendance' %}
+            <i class="bi bi-calendar-check-fill"></i>
+            {% else %}
+            <i class="bi bi-info-circle-fill"></i>
+            {% endif %}
+          </div>
+          <div class="nt-body">
+            <span class="nt-type">{{ n.get_notification_type_display }}</span>
+            <span class="nt-message">{{ n.message }}</span>
+          </div>
+          <span class="nt-time">{{ n.created_at|timesince }} ago</span>
+          <span class="nt-status-dot" title="{% if n.is_read %}Read{% else %}Unread{% endif %}">
+            {% if not n.is_read %}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#EF4444;"></span>{% endif %}
+          </span>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="d-flex flex-column align-items-center text-center py-5 text-muted empty-state-cell">
+        <i class="bi bi-bell-slash fs-1 d-block mb-3" style="color:var(--gray-400);"></i>
+        <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No notifications found.</h6>
+        <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;max-width:380px;">Notifications will appear here when the system starts sending alerts.</p>
+      </div>
+      {% endif %}
     </div>
 
   </div>
+</div>
+{% endblock %}
 
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script src="{% static 'js/admin_dashboard.js' %}"></script>
-  <script src="{% static 'js/notifications.js' %}"></script>
-</body>
-</html>
+{% block extra_js %}
+<script src="{% static 'js/admin_dashboard.js' %}"></script>
+<script src="{% static 'js/notifications.js' %}"></script>
+{% endblock %}

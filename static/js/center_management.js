@@ -270,12 +270,13 @@
     selectedLng = roundedLng;
   }
 
-  /* ---- Professional Map Search (Photon + Nominatim fallback) ---- */
+  /* ---- Professional Map Search (Geoapify Autocomplete) ---- */
   var mapSearchInput = document.getElementById('mapSearchInput');
   var mapSuggestions = document.getElementById('mapSuggestions');
   var mapSearchSpinner = document.getElementById('mapSearchSpinner');
   var searchDebounceTimer = null;
   var searchAbortController = null;
+  var GEOAPIFY_KEY = mapSearchInput ? mapSearchInput.getAttribute('data-geoapify-key') : '';
 
   function doGeocode(query) {
     if (searchAbortController) {
@@ -284,90 +285,33 @@
     searchAbortController = new AbortController();
     var signal = searchAbortController.signal;
 
-    var photonUrl = 'https://photon.komoot.io/api/?q=' + encodeURIComponent(query) + '&limit=5&lang=en&bbox=60.87,23.69,77.84,37.08';
+    if (!navigator.onLine) {
+      return Promise.reject(new Error('offline'));
+    }
 
-    return fetch(photonUrl, { signal: signal })
+    var url = 'https://api.geoapify.com/v1/geocode/autocomplete?text=' + encodeURIComponent(query) + '&limit=8&apiKey=' + encodeURIComponent(GEOAPIFY_KEY) + '&lang=en&filter=countrycode:pk&bias=proximity:73.0479,33.6844';
+
+    return fetch(url, { signal: signal })
       .then(function (resp) {
-        if (!resp.ok) throw new Error('Photon failed');
+        if (!resp.ok) throw new Error('Geoapify failed');
         return resp.json();
       })
       .then(function (data) {
-        if (data && data.features && data.features.length > 0) {
-          return data.features
-            .filter(function (f) {
-              var props = f.properties || {};
-              var country = (props.country || '').toLowerCase();
-              var countrycode = (props.countrycode || '').toLowerCase();
-              return countrycode === 'pk' || country.indexOf('pakistan') !== -1;
-            })
-            .map(function (f) {
-            var props = f.properties || {};
-            var coords = f.geometry && f.geometry.coordinates;
-            var label = [
-              props.name,
-              props.street || '',
-              props.city || props.town || props.village || '',
-              props.state || '',
-              'Pakistan'
-            ].filter(Boolean).join(', ');
+        if (data && data.results && data.results.length > 0) {
+          return data.results.map(function (item) {
             return {
-              label: label || props.name || 'Unknown',
-              name: props.name || '',
-              city: props.city || props.town || props.village || '',
-              state: props.state || '',
-              country: 'Pakistan',
-              type: props.osm_value || props.type || '',
-              lat: coords ? coords[1] : null,
-              lng: coords ? coords[0] : null
+              label: item.formatted || item.address_line1 || '',
+              name: item.name || item.address_line1 || '',
+              city: item.city || item.town || item.village || '',
+              state: item.state || '',
+              country: item.country || 'Pakistan',
+              type: item.result_type || item.category || 'place',
+              lat: item.lat,
+              lng: item.lon
             };
           });
         }
-        throw new Error('No results from Photon');
-      })
-      .catch(function (err) {
-        if (err.name === 'AbortError') throw err;
-        return fallbackNominatim(query);
-      });
-  }
-
-  function fallbackNominatim(query) {
-    var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&addressdetails=1&countrycodes=pk';
-    return fetch(url)
-      .then(function (resp) {
-        if (!resp.ok) throw new Error('Nominatim failed');
-        return resp.json();
-      })
-      .then(function (data) {
-        if (data && data.length > 0) {
-          return data
-            .filter(function (item) {
-              var country = (item.address && item.address.country) || '';
-              var countryCode = (item.address && item.address.country_code) || '';
-              return countryCode === 'pk' || country.toLowerCase().indexOf('pakistan') !== -1;
-            })
-            .map(function (item) {
-            var addr = item.address || {};
-            var parts = [
-              addr.road || addr.pedestrian || addr.footway || '',
-              addr.suburb || addr.neighbourhood || '',
-              addr.city || addr.town || addr.village || addr.county || '',
-              addr.state || '',
-              'Pakistan'
-            ].filter(Boolean);
-            var label = parts.length > 0 ? parts.join(', ') : item.display_name;
-            return {
-              label: label,
-              name: item.name || parts[0] || '',
-              city: addr.city || addr.town || addr.village || addr.county || '',
-              state: addr.state || '',
-              country: 'Pakistan',
-              type: item.type || 'place',
-              lat: parseFloat(item.lat),
-              lng: parseFloat(item.lon)
-            };
-          });
-        }
-        throw new Error('No results from Nominatim');
+        return [];
       });
   }
 
@@ -410,10 +354,14 @@
     mapSuggestions.innerHTML = '<div class="map-suggestions-empty"><i class="bi bi-search"></i> No locations found.</div>';
   }
 
-  function showSearchError() {
+  function showSearchError(offline) {
     mapSuggestions.innerHTML = '';
     mapSuggestions.classList.remove('d-none');
-    mapSuggestions.innerHTML = '<div class="map-suggestions-empty map-suggestions-error"><i class="bi bi-exclamation-circle"></i> Unable to search location. Please try again.</div>';
+    if (offline) {
+      mapSuggestions.innerHTML = '<div class="map-suggestions-empty map-suggestions-error"><i class="bi bi-wifi-off"></i> Unable to search locations. Please check your internet connection.</div>';
+    } else {
+      mapSuggestions.innerHTML = '<div class="map-suggestions-empty map-suggestions-error"><i class="bi bi-exclamation-circle"></i> Unable to search location. Please try again.</div>';
+    }
   }
 
   function getTypeIcon(type) {
@@ -426,6 +374,9 @@
     if (t.indexOf('street') !== -1 || t.indexOf('road') !== -1) return 'bi-signpost';
     if (t.indexOf('village') !== -1 || t.indexOf('suburb') !== -1) return 'bi-house-door';
     if (t.indexOf('city') !== -1 || t.indexOf('town') !== -1) return 'bi-building';
+    if (t.indexOf('district') !== -1 || t.indexOf('county') !== -1) return 'bi-map';
+    if (t.indexOf('shop') !== -1 || t.indexOf('commercial') !== -1 || t.indexOf('business') !== -1) return 'bi-shop';
+    if (t.indexOf('company') !== -1 || t.indexOf('amenity') !== -1) return 'bi-briefcase';
     return 'bi-geo-alt';
   }
 
@@ -433,38 +384,16 @@
     mapSuggestions.classList.add('d-none');
     mapSearchInput.value = item.label;
     if (item.lat && item.lng && mapInstance) {
-      mapInstance.setView([item.lat, item.lng], 16);
+      mapInstance.setView([item.lat, item.lng], 17);
       placeMarker(item.lat, item.lng);
     }
-  }
-
-  function doSearchOnEnter() {
-    var query = mapSearchInput ? mapSearchInput.value.trim() : '';
-    if (!query) return;
-    mapSuggestions.classList.add('d-none');
-    mapSearchSpinner.classList.remove('d-none');
-
-    doGeocode(query)
-      .then(function (results) {
-        mapSearchSpinner.classList.add('d-none');
-        if (results && results.length > 0) {
-          selectSuggestion(results[0]);
-        } else {
-          showToast('No locations found.', 'warning');
-        }
-      })
-      .catch(function (err) {
-        if (err.name === 'AbortError') return;
-        mapSearchSpinner.classList.add('d-none');
-        showToast('Unable to search location. Please try again.', 'danger');
-      });
   }
 
   if (mapSearchInput) {
     mapSearchInput.addEventListener('input', function () {
       clearTimeout(searchDebounceTimer);
       var query = mapSearchInput.value.trim();
-      if (query.length < 2) {
+      if (query.length < 3) {
         mapSuggestions.classList.add('d-none');
         return;
       }
@@ -480,11 +409,11 @@
             }
           })
           .catch(function (err) {
-            if (err.name === 'AbortError') return;
             mapSearchSpinner.classList.add('d-none');
-            showSearchError();
+            if (err.name === 'AbortError') return;
+            showSearchError(err.message === 'offline');
           });
-      }, 350);
+      }, 300);
     });
 
     mapSearchInput.addEventListener('keydown', function (e) {
@@ -496,7 +425,6 @@
           return;
         }
         mapSuggestions.classList.add('d-none');
-        doSearchOnEnter();
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -654,12 +582,7 @@
     var spinner = document.getElementById('saveCenterBtnSpinner');
     var errorsDiv = document.getElementById('centerFormErrors');
 
-    var lat = document.getElementById('id_latitude').value;
-    var lng = document.getElementById('id_longitude').value;
-    if (!lat || !lng) {
-      showToast('Please select a location on the map.', 'warning');
-      return;
-    }
+    // Lat/Lng are optional - teacher can configure via GPS later
 
     clearFieldErrors();
     errorsDiv.classList.add('d-none');
@@ -746,6 +669,10 @@
     } else {
       photoHtml = '<span class="cm-cell-muted">Pending</span>';
     }
+    var isConfigured = center.configuration_status === 'CONFIGURED';
+    var configHtml = isConfigured
+      ? '<span class="cm-badge" style="background:#D1FAE5;color:#065F46;"><i class="bi bi-check-circle-fill"></i> Configured</span>'
+      : '<span class="cm-badge" style="background:#FEE2E2;color:#991B1B;"><i class="bi bi-exclamation-circle-fill"></i> Not Configured</span>';
     var statusLower = (center.status || 'pending').toLowerCase();
     var tr = document.createElement('tr');
     tr.setAttribute('data-id', center.id);
@@ -754,6 +681,7 @@
       '<td class="cm-cell-muted">' + escapeHtml(center.city || '--') + '</td>' +
       '<td class="cm-cell-muted">' + escapeHtml(center.district) + '</td>' +
       '<td>' + photoHtml + '</td>' +
+      '<td>' + configHtml + '</td>' +
       '<td><span class="cm-badge cm-badge-' + statusLower + '"><i class="bi bi-circle-fill"></i> ' + escapeHtml(center.status) + '</span></td>' +
       '<td class="cm-action-cell">' +
       '<button class="cm-action-btn cm-action-edit" data-action="edit" title="Edit" aria-label="Edit ' + escapeHtml(center.center_name) + '"><i class="bi bi-pencil"></i></button>' +

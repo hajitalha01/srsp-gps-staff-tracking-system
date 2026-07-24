@@ -1,12 +1,4 @@
-<!-- ============================================================
-  admin_sidebar.html — Reusable Admin Sidebar
-  ============================================================
-  Usage:
-    {% include 'partials/admin_sidebar.html' with active='dashboard' %}
-
-  active values:
-    dashboard | staff | centers | attendance | reports | alerts | notifications
-  ============================================================ -->
+<!-- admin_sidebar.html — Reusable Admin Sidebar -->
 
 <aside id="sidebar" class="sidebar" role="navigation" aria-label="Admin navigation">
 
@@ -85,6 +77,16 @@
            aria-current="{% if active == 'reports' %}page{% endif %}">
           <i class="fas fa-file-alt" aria-hidden="true"></i>
           <span>Reports</span>
+        </a>
+      </li>
+
+      <!-- Location Change Requests -->
+      <li>
+        <a href="{% url 'admin_location_requests' %}"
+           class="sidebar-link {% if active == 'location_requests' %}active{% endif %}"
+           aria-current="{% if active == 'location_requests' %}page{% endif %}">
+          <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+          <span>Location Change Req.</span>
         </a>
       </li>
 

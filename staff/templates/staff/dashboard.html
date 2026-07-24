@@ -18,12 +18,31 @@
         <p style="font-size:11px;color:var(--text-secondary);margin:1px 0 0">{{ user_center }}</p>
       </div>
       <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
-        <a href="{% url 'staff_history' %}" style="text-decoration:none;color:inherit;display:inline-flex" title="Settings"><i class="ti ti-settings" style="font-size:18px;color:var(--text-secondary);transition:color 0.2s" onmouseover="this.style.color='var(--srsp-accent)'" onmouseout="this.style.color='var(--text-secondary)'"></i></a>
+        <a href="{% url 'staff_settings' %}" style="text-decoration:none;color:inherit;display:inline-flex" title="Settings"><i class="ti ti-settings" style="font-size:18px;color:var(--text-secondary);transition:color 0.2s" onmouseover="this.style.color='var(--srsp-accent)'" onmouseout="this.style.color='var(--text-secondary)'"></i></a>
         <a href="{% url 'logout' %}" style="text-decoration:none;color:inherit;display:inline-flex" title="Logout"><i class="ti ti-logout" style="font-size:18px;color:var(--text-secondary);transition:color 0.2s" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-secondary)'"></i></a>
       </div>
     </div>
 
-    <!-- Live location map (Leaflet.js yahan mount hoga) -->
+    {% if center_config_status == 'NOT_CONFIGURED' %}
+    <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:36px;height:36px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="ti ti-map-pin-exclamation" style="font-size:18px;color:#92400E"></i>
+        </div>
+        <div>
+          <p style="font-size:13px;font-weight:600;margin:0;color:#92400E">Center Location Not Configured</p>
+          <p style="font-size:11px;color:#B45309;margin:2px 0 0">Please configure your center location.</p>
+        </div>
+      </div>
+      <a href="{% url 'staff_center_settings' %}" style="text-decoration:none;display:block;">
+        <button type="button" style="width:100%;background:#1F5C40;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+          <i class="ti ti-settings" style="font-size:16px"></i> Set Center Location
+        </button>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Live location map -->
     <div style="background:var(--surface-1);border-radius:14px;padding:14px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <p style="font-size:12px;color:var(--text-secondary);margin:0">Live location</p>
@@ -36,11 +55,19 @@
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:14px">
-      <button id="checkInBtn" data-checked-in="{{ has_checked_in|yesno:'true,false' }}" data-checked-out="{{ has_checked_out|yesno:'true,false' }}" style="flex:1;background:#2FBF8F;color:#0B2E1F;border:none;padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <i class="ti ti-login-2" style="font-size:18px"></i>Check in
+      <button id="checkInBtn"
+        data-checked-in="{{ has_checked_in|yesno:'true,false' }}"
+        data-checked-out="{{ has_checked_out|yesno:'true,false' }}"
+        style="flex:1;background:#2FBF8F;color:#0B2E1F;border:none;padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <i class="ti ti-login-2" style="font-size:18px"></i>
+        <span id="checkInBtnText">Check In</span>
       </button>
-      <button id="checkOutBtn" data-checked-in="{{ has_checked_in|yesno:'true,false' }}" data-checked-out="{{ has_checked_out|yesno:'true,false' }}" style="flex:1;background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border);padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
-        <i class="ti ti-logout-2" style="font-size:18px"></i>Check out
+      <button id="checkOutBtn"
+        data-checked-in="{{ has_checked_in|yesno:'true,false' }}"
+        data-checked-out="{{ has_checked_out|yesno:'true,false' }}"
+        style="flex:1;background:var(--fill-secondary);color:var(--text-secondary);border:0.5px solid var(--border);padding:14px;border-radius:12px;font-size:13px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:4px">
+        <i class="ti ti-logout-2" style="font-size:18px"></i>
+        <span id="checkOutBtnText">Check Out</span>
       </button>
     </div>
 
@@ -137,6 +164,8 @@ document.addEventListener('DOMContentLoaded', function(){
 (function() {
   var checkInBtn = document.getElementById('checkInBtn');
   var checkOutBtn = document.getElementById('checkOutBtn');
+  var checkInBtnText = document.getElementById('checkInBtnText');
+  var checkOutBtnText = document.getElementById('checkOutBtnText');
   var toast = document.getElementById('attendanceToast');
   var attendanceSection = document.getElementById('attendanceSection');
   var hasCheckedIn = checkInBtn.dataset.checkedIn === 'true';
@@ -159,45 +188,60 @@ document.addEventListener('DOMContentLoaded', function(){
 
   var cameraStream = null;
   var capturedImageData = null;
-  var pendingAction = null; // 'checkin' or 'checkout'
+  var pendingAction = null;
 
   function updateButtons() {
     if (!hasCheckedIn) {
+      // Case 1: No attendance today - Show Check In
       checkInBtn.disabled = false;
       checkInBtn.style.opacity = '1';
       checkInBtn.style.background = '#2FBF8F';
       checkInBtn.style.color = '#0B2E1F';
       checkInBtn.style.cursor = 'pointer';
+      checkInBtn.querySelector('i').className = 'ti ti-login-2';
+      checkInBtnText.textContent = 'Check In';
 
       checkOutBtn.disabled = true;
       checkOutBtn.style.opacity = '0.5';
       checkOutBtn.style.background = 'var(--fill-secondary)';
       checkOutBtn.style.color = 'var(--text-secondary)';
       checkOutBtn.style.cursor = 'not-allowed';
+      checkOutBtn.querySelector('i').className = 'ti ti-logout-2';
+      checkOutBtnText.textContent = 'Check Out';
     } else if (hasCheckedIn && !hasCheckedOut) {
+      // Case 2: Checked in, not checked out - Show Check Out
       checkInBtn.disabled = true;
       checkInBtn.style.opacity = '0.5';
       checkInBtn.style.background = 'var(--fill-secondary)';
       checkInBtn.style.color = 'var(--text-secondary)';
       checkInBtn.style.cursor = 'not-allowed';
+      checkInBtn.querySelector('i').className = 'ti ti-login-2';
+      checkInBtnText.textContent = 'Checked In';
 
       checkOutBtn.disabled = false;
       checkOutBtn.style.opacity = '1';
       checkOutBtn.style.background = '#2FBF8F';
       checkOutBtn.style.color = '#0B2E1F';
       checkOutBtn.style.cursor = 'pointer';
+      checkOutBtn.querySelector('i').className = 'ti ti-logout-2';
+      checkOutBtnText.textContent = 'Check Out';
     } else {
+      // Case 3: Both check-in and check-out done - Show Completed
       checkInBtn.disabled = true;
       checkInBtn.style.opacity = '0.5';
       checkInBtn.style.background = 'var(--fill-secondary)';
       checkInBtn.style.color = 'var(--text-secondary)';
       checkInBtn.style.cursor = 'not-allowed';
+      checkInBtn.querySelector('i').className = 'ti ti-login-2';
+      checkInBtnText.textContent = 'Checked In';
 
       checkOutBtn.disabled = true;
       checkOutBtn.style.opacity = '0.5';
       checkOutBtn.style.background = 'var(--fill-secondary)';
       checkOutBtn.style.color = 'var(--text-secondary)';
       checkOutBtn.style.cursor = 'not-allowed';
+      checkOutBtn.querySelector('i').className = 'ti ti-check-circle';
+      checkOutBtnText.textContent = 'Completed';
     }
   }
 
@@ -321,10 +365,8 @@ document.addEventListener('DOMContentLoaded', function(){
     .then(function(resp) { return resp.json(); })
     .then(function(data) {
       faceLoading.style.display = 'none';
-      console.log('DEBUG: Face verification response:', data);
 
       if (data.success && data.verified) {
-        console.log('DEBUG: Face verification SUCCESS, pendingAction =', pendingAction);
         faceResult.style.display = 'flex';
         faceResult.style.background = 'rgba(47,191,143,0.15)';
         faceResultIcon.innerHTML = '&#10003;';
@@ -334,17 +376,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
         setTimeout(function() {
           var action = pendingAction;
-          console.log('DEBUG: 800ms elapsed, pendingAction =', pendingAction);
           closeModal();
-          console.log('DEBUG: After closeModal, captured action =', action);
           if (action === 'checkin') {
-            console.log('DEBUG: Calling performCheckIn()');
             performCheckIn();
           } else if (action === 'checkout') {
-            console.log('DEBUG: Calling performCheckOut()');
             performCheckOut();
-          } else {
-            console.log('DEBUG: action is neither checkin nor checkout:', action);
           }
         }, 800);
       } else {
@@ -374,7 +410,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
   function openModal(action) {
     pendingAction = action;
-    faceModalTitle.textContent = action === 'checkin' ? 'Verify to Check In' : 'Verify to Check Out';
+    if (action === 'checkin') {
+      faceModalTitle.textContent = 'Verify to Check In';
+    } else if (action === 'checkout') {
+      faceModalTitle.textContent = 'Verify to Check Out';
+    }
     faceModal.style.display = 'flex';
     capturedImageData = null;
     openCamera();

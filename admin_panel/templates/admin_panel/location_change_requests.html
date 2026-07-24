@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Location Change Requests — Admin{% endblock %}
+
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='location_requests' %}
+
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <h3 style="font-size:18px;margin:0">Location Change Requests</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin:2px 0 0">Manage teacher requests to update center GPS coordinates</p>
+      </div>
+      <a href="{% url 'admin_dashboard' %}" style="text-decoration:none;font-size:13px;color:var(--text-accent);font-weight:500;display:inline-flex;align-items:center;gap:6px;">
+        <i class="ti ti-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px">
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px;border-left:4px solid var(--text-accent);">
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 4px">Total Requests</p>
+        <p style="font-size:22px;font-weight:500;margin:0">{{ total_requests }}</p>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px;border-left:4px solid #F59E0B;">
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 4px">Pending</p>
+        <p style="font-size:22px;font-weight:500;margin:0;color:#92400E;">{{ pending_count }}</p>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px;border-left:4px solid var(--text-success);">
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 4px">Approved</p>
+        <p style="font-size:22px;font-weight:500;margin:0;color:var(--text-success)">{{ approved_count }}</p>
+      </div>
+      <div style="background:var(--surface-2);border-radius:8px;padding:14px;border-left:4px solid var(--text-danger);">
+        <p style="font-size:12px;color:var(--text-secondary);margin:0 0 4px">Rejected</p>
+        <p style="font-size:22px;font-weight:500;margin:0;color:var(--text-danger)">{{ rejected_count }}</p>
+      </div>
+    </div>
+
+    <form method="get" style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <input type="text" name="q" placeholder="Search teacher, center or reason..." value="{{ q }}" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-2);color:var(--text-primary);outline:none;flex:1;min-width:180px;">
+      <select name="status" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface-2);color:var(--text-primary);outline:none;">
+        <option value="">All Status</option>
+        <option value="Pending" {% if selected_status == 'Pending' %}selected{% endif %}>Pending</option>
+        <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+        <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+      </select>
+      <button type="submit" style="padding:8px 20px;border:none;border-radius:8px;background:var(--text-accent);color:#fff;font-size:13px;font-weight:500;cursor:pointer;"><i class="ti ti-filter"></i> Filter</button>
+      {% if filtered %}<a href="{% url 'admin_location_requests' %}" style="padding:8px 20px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:13px;font-weight:500;color:var(--text-secondary);text-decoration:none;"><i class="ti ti-x"></i> Clear</a>{% endif %}
+    </form>
+
+    <div style="background:var(--surface-2);border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:var(--surface-1);">
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Teacher</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Center</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Reason</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Current Coords</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Requested Coords</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Request Date</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Status</th>
+            <th style="text-align:left;padding:14px 16px;font-size:12px;font-weight:600;color:var(--text-secondary);white-space:nowrap;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+          <tr style="border-top:0.5px solid var(--border);">
+            <td style="padding:14px 16px;font-weight:500;">{{ req.teacher.full_name }}</td>
+            <td style="padding:14px 16px;">{{ req.center.center_name }}</td>
+            <td style="padding:14px 16px;max-width:200px;white-space:normal;">{{ req.reason }}</td>
+            <td style="padding:14px 16px;font-size:12px;">
+              {% if req.old_latitude and req.old_longitude %}
+                {{ req.old_latitude }}, {{ req.old_longitude }}
+              {% else %}
+                <span style="color:var(--text-muted)">Not configured</span>
+              {% endif %}
+            </td>
+            <td style="padding:14px 16px;font-size:12px;">
+              {% if req.new_latitude and req.new_longitude %}
+                {{ req.new_latitude }}, {{ req.new_longitude }}
+              {% else %}
+                <span style="color:var(--text-muted)">--</span>
+              {% endif %}
+            </td>
+            <td style="padding:14px 16px;white-space:nowrap;font-size:12px;">{{ req.requested_date|date:"Y-m-d h:i A" }}</td>
+            <td style="padding:14px 16px;">
+              {% if req.status == 'Pending' %}
+                <span style="background:#FEF3C7;color:#92400E;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;">{{ req.status }}</span>
+              {% elif req.status == 'Approved' %}
+                <span style="background:#D1FAE5;color:#065F46;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;">{{ req.status }}</span>
+              {% else %}
+                <span style="background:#FEE2E2;color:#991B1B;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;">{{ req.status }}</span>
+              {% endif %}
+            </td>
+            <td style="padding:14px 16px;">
+              {% if req.status == 'Pending' %}
+              <div style="display:flex;gap:6px;">
+                <button class="btn-approve-lcr" data-action="approve" data-id="{{ req.id }}" style="padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:500;background:#D1FAE5;color:#065F46;cursor:pointer;">Approve</button>
+                <button class="btn-reject-lcr" data-action="reject" data-id="{{ req.id }}" style="padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:500;background:#FEE2E2;color:#991B1B;cursor:pointer;">Reject</button>
+              </div>
+              {% else %}
+                <span style="font-size:12px;color:var(--text-muted);">Processed</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" style="padding:60px 20px;text-align:center;color:var(--text-muted);">
+              <i class="ti ti-inbox" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+              <h6 style="font-weight:600;color:var(--text-secondary);margin:0 0 4px;">No location change requests found</h6>
+              <p style="font-size:13px;margin:0;">Teachers will request location changes from their settings page.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div style="position:fixed;top:16px;right:16px;z-index:9999;">
+  <div id="lcrToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius:12px;">
+    <div class="d-flex">
+      <div class="toast-body" id="lcrToastMessage" style="font-size:13px;font-weight:500;"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function() {
+  var toastEl = document.getElementById('lcrToast');
+  var toastMsg = document.getElementById('lcrToastMessage');
+  var toast = toastEl ? new bootstrap.Toast(toastEl, { delay: 3000 }) : null;
+
+  function showToast(msg, type) {
+    if (!toast || !toastEl || !toastMsg) return;
+    toastEl.className = 'toast align-items-center border-0';
+    if (type === 'success') toastEl.classList.add('bg-success', 'text-white');
+    else if (type === 'danger') toastEl.classList.add('bg-danger', 'text-white');
+    else toastEl.classList.add('bg-dark', 'text-white');
+    toastMsg.textContent = msg;
+    toast.show();
+  }
+
+  function getCSRFToken() {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var c = cookies[i].trim();
+      if (c.indexOf('csrftoken=') === 0) return decodeURIComponent(c.substring(10));
+    }
+    return '';
+  }
+
+  document.querySelectorAll('.btn-approve-lcr, .btn-reject-lcr').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var action = this.dataset.action;
+      var id = this.dataset.id;
+      var url = '/panel/location-requests/' + id + '/' + action + '/';
+      var label = action === 'approve' ? 'approve' : 'reject';
+
+      if (!confirm('Are you sure you want to ' + label + ' this request?')) return;
+
+      this.disabled = true;
+      this.textContent = action === 'approve' ? 'Approving...' : 'Rejecting...';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+          'X-Requested-With': 'XMLHttpRequest',
+        }
+      })
+      .then(function(resp) { return resp.json(); })
+      .then(function(data) {
+        if (data.success) {
+          showToast(data.message, 'success');
+          setTimeout(function() { location.reload(); }, 1000);
+        } else {
+          showToast(data.error, 'danger');
+          btn.disabled = false;
+          btn.textContent = action === 'approve' ? 'Approve' : 'Reject';
+        }
+      })
+      .catch(function() {
+        showToast('Network error.', 'danger');
+        btn.disabled = false;
+        btn.textContent = action === 'approve' ? 'Approve' : 'Reject';
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

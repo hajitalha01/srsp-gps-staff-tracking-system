@@ -1,0 +1,783 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Settings — Staff{% endblock %}
+
+{% block content %}
+<style>
+* { box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; margin: 0; }
+.st-wrapper { display: flex; justify-content: center; padding: 24px 16px; background: #F9FAFB; min-height: 100vh; }
+.st-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 16px; }
+.st-card { background: #fff; border-radius: 20px; border: 1px solid #E5E7EB; padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.05); }
+.st-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #F3F4F6; }
+.st-card-header h4 { font-size: 1rem; font-weight: 600; margin: 0; color: #111827; }
+.st-card-header p { font-size: 0.8125rem; color: #6B7280; margin: 2px 0 0; }
+.st-card-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.st-card-icon.green { background: #D1FAE5; color: #065F46; }
+.st-card-icon.amber { background: #FEF3C7; color: #92400E; }
+.st-card-icon.red { background: #FEE2E2; color: #991B1B; }
+.st-card-icon.blue { background: #DBEAFE; color: #1D4ED8; }
+.st-card-icon.gray { background: #F3F4F6; color: #374151; }
+.st-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 0.9375rem; font-weight: 500; cursor: pointer; text-decoration: none; }
+.st-btn-primary { background: #1F5C40; color: #fff; }
+.st-btn-primary:hover { background: #15422E; color: #fff; text-decoration: none; }
+.st-btn-secondary { background: #fff; color: #374151; border: 1px solid #D1D5DB; }
+.st-btn-secondary:hover { background: #F9FAFB; text-decoration: none; }
+.st-btn-danger { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.st-btn-danger:hover { background: #FECACA; text-decoration: none; }
+.st-btn-success { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+.st-btn-success:hover { background: #A7F3D0; text-decoration: none; }
+.st-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.st-divider { height: 1px; background: #E5E7EB; margin: 16px 0; }
+.st-back { text-decoration: none; font-size: 0.875rem; color: #6B7280; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.st-back:hover { color: #111827; }
+.st-section-title { font-size: 0.8125rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+.st-info-grid { display: flex; flex-direction: column; gap: 8px; }
+.st-info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 0.8125rem; }
+.st-info-row:last-child { border-bottom: none; }
+.st-info-label { color: #6B7280; }
+.st-info-value { font-weight: 500; color: #111827; }
+.st-info-value.na { color: #9CA3AF; font-style: italic; }
+.config-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.config-badge.configured { background: #D1FAE5; color: #065F46; }
+.config-badge.not-configured { background: #FEE2E2; color: #991B1B; }
+.config-badge.pending { background: #FEF3C7; color: #92400E; }
+.st-msg { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 14px; margin: 12px 0; text-align: center; font-size: 0.875rem; color: #92400E; }
+.st-msg.success { background: #D1FAE5; border-color: #6EE7B7; color: #065F46; }
+.st-link-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F3F4F6; text-decoration: none; color: inherit; }
+.st-link-row:hover { background: #F9FAFB; margin: 0 -12px; padding: 12px 12px; border-radius: 8px; text-decoration: none; }
+.st-link-row:last-child { border-bottom: none; }
+.st-link-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.st-link-text { flex: 1; }
+.st-link-text p { margin: 0; font-size: 0.875rem; font-weight: 500; color: #111827; }
+.st-link-text span { font-size: 0.75rem; color: #6B7280; }
+.st-link-arrow { color: #9CA3AF; font-size: 16px; }
+
+/* Action button card for center location */
+.st-action-card { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 14px; padding: 16px; margin: 12px 0; }
+
+/* Center configuration modal styles (reused from center_settings) */
+.cs-modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 99998; align-items: center; justify-content: center; padding: 16px; }
+.cs-modal-overlay.active { display: flex; }
+.cs-modal { background: #fff; border-radius: 20px; padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+.cs-modal h4 { font-size: 1.125rem; font-weight: 600; margin: 0 0 4px; }
+.cs-modal p.sub { font-size: 0.8125rem; color: #6B7280; margin: 0 0 20px; }
+.cs-modal .step-indicator { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.cs-modal .step-dot { width: 10px; height: 10px; border-radius: 50%; background: #E5E7EB; }
+.cs-modal .step-dot.active { background: #1F5C40; }
+.cs-modal .step-dot.done { background: #2FBF8F; }
+.cs-gps-status { display: flex; align-items: center; gap: 10px; padding: 14px; background: #F3F4F6; border-radius: 12px; margin-bottom: 16px; }
+.cs-gps-status .gps-spinner { width: 20px; height: 20px; border: 2px solid #E5E7EB; border-top-color: #1F5C40; border-radius: 50%; animation: cs-spin 0.8s linear infinite; }
+@keyframes cs-spin { to { transform: rotate(360deg); } }
+.cs-gps-status .gps-icon { font-size: 20px; }
+.cs-gps-status .gps-icon.success { color: #2FBF8F; }
+.cs-gps-status .gps-icon.error { color: #EF4444; }
+.cs-gps-status .gps-text { font-size: 0.8125rem; color: #4B5563; }
+.cs-gps-status .gps-text strong { display: block; font-size: 0.875rem; color: #111827; }
+.cs-gps-accuracy { font-size: 0.75rem; color: #6B7280; margin-top: 4px; }
+.cs-error-text { font-size: 0.8125rem; color: #EF4444; margin: 8px 0; text-align: center; }
+.cs-camera-box { position: relative; width: 100%; aspect-ratio: 3/4; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+.cs-camera-box video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cs-camera-box canvas { display: none; width: 100%; height: 100%; object-fit: cover; }
+.cs-camera-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; flex-direction: column; gap: 8px; }
+.cs-camera-overlay.active { display: flex; }
+.cs-camera-overlay .spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #2FBF8F; border-radius: 50%; animation: cs-spin 0.8s linear infinite; }
+.cs-camera-overlay p { font-size: 0.8125rem; color: #fff; margin: 0; }
+.cs-camera-btns { display: flex; gap: 8px; justify-content: center; }
+.cs-camera-btns button { padding: 10px 20px; border: none; border-radius: 10px; font-size: 0.8125rem; font-weight: 500; cursor: pointer; }
+.cs-camera-btns .capture { background: #1F5C40; color: #fff; }
+.cs-camera-btns .retake { background: #fff; color: #374151; border: 1px solid #D1D5DB; display: none; }
+.cs-camera-btns .verify { background: #2FBF8F; color: #fff; display: none; }
+.cs-result-icon { font-size: 40px; margin-bottom: 4px; }
+.cs-close-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 22px; cursor: pointer; color: #999; line-height: 1; }
+.cs-textarea { width: 100%; padding: 12px; border: 1px solid #D1D5DB; border-radius: 12px; font-size: 0.875rem; resize: vertical; min-height: 80px; outline: none; }
+.cs-textarea:focus { border-color: #1F5C40; }
+</style>
+
+<div class="st-wrapper">
+  <div class="st-container">
+
+    <!-- Back link -->
+    <a href="{% url 'staff_dashboard' %}" class="st-back"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+
+    <!-- ===== Profile Card ===== -->
+    <div class="st-card">
+      <div class="st-card-header">
+        <div class="st-card-icon gray">
+          <i class="bi bi-person-fill"></i>
+        </div>
+        <div>
+          <h4>{{ request.user.get_full_name }}</h4>
+          <p>{{ user_center }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Center Location Card ===== -->
+    <div class="st-card" id="centerLocationCard">
+      <div class="st-card-header">
+        <div class="st-card-icon {% if center and configuration_status == 'CONFIGURED' %}green{% else %}amber{% endif %}">
+          <i class="bi bi-geo-alt-fill"></i>
+        </div>
+        <div>
+          <h4>Center Location</h4>
+          <p>Configure the GPS coordinates of your assigned center</p>
+        </div>
+      </div>
+
+      {% if center %}
+      <div class="st-section-title">Assigned Center Information</div>
+      <div class="st-info-grid">
+        <div class="st-info-row">
+          <span class="st-info-label">Center Name</span>
+          <span class="st-info-value">{{ center.center_name }}</span>
+        </div>
+        <div class="st-info-row">
+          <span class="st-info-label">Status</span>
+          <span class="st-info-value">
+            {% if configuration_status == 'CONFIGURED' %}
+            <span class="config-badge configured"><i class="bi bi-check-circle-fill"></i> Configured</span>
+            {% else %}
+            <span class="config-badge not-configured"><i class="bi bi-exclamation-circle-fill"></i> Not Configured</span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="st-info-row">
+          <span class="st-info-label">Latitude</span>
+          <span class="st-info-value {% if not latitude %}na{% endif %}">{% if latitude %}{{ latitude }}{% else %}Not set{% endif %}</span>
+        </div>
+        <div class="st-info-row">
+          <span class="st-info-label">Longitude</span>
+          <span class="st-info-value {% if not longitude %}na{% endif %}">{% if longitude %}{{ longitude }}{% else %}Not set{% endif %}</span>
+        </div>
+        {% if gps_accuracy %}
+        <div class="st-info-row">
+          <span class="st-info-label">GPS Accuracy</span>
+          <span class="st-info-value">{{ gps_accuracy }} meters</span>
+        </div>
+        {% endif %}
+        {% if configured_by %}
+        <div class="st-info-row">
+          <span class="st-info-label">Configured By</span>
+          <span class="st-info-value">{{ configured_by }}</span>
+        </div>
+        {% endif %}
+        {% if configured_date %}
+        <div class="st-info-row">
+          <span class="st-info-label">Configured Date</span>
+          <span class="st-info-value">{{ configured_date|date:"Y-m-d h:i A" }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if configuration_status == 'NOT_CONFIGURED' %}
+      <div class="st-msg">
+        <p style="margin:0;">Your center location has not been configured yet.<br>Please stand inside your center and press the button below.</p>
+      </div>
+      <button class="st-btn st-btn-primary" id="setLocationBtn">
+        <i class="bi bi-geo-alt-fill"></i> Configure Center Location
+      </button>
+      {% elif configuration_status == 'CONFIGURED' %}
+      <div class="st-msg success">
+        <p style="margin:0;"><i class="bi bi-check-circle-fill"></i> Center Location Configured Successfully</p>
+        <p style="font-size:0.75rem;margin-top:4px;">Location changes require Administrator Approval.</p>
+      </div>
+      <button class="st-btn st-btn-secondary" id="setLocationBtn" disabled>
+        <i class="bi bi-check-circle"></i> Center Configured
+      </button>
+
+      {% if has_pending_request %}
+      <div class="st-msg" style="margin-top:12px;">
+        <p style="margin:0;"><i class="bi bi-clock"></i> Your location change request is pending admin approval.</p>
+      </div>
+      {% else %}
+      <div class="st-divider"></div>
+      <button class="st-btn st-btn-danger" id="requestChangeBtn">
+        <i class="bi bi-arrow-repeat"></i> Request Center Location Change
+      </button>
+      {% endif %}
+
+      {% if location_change_requests %}
+      <div class="st-divider"></div>
+      <div class="st-section-title">Location Change Request History</div>
+      <div style="font-size:0.8rem;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="color:#6B7280;border-bottom:1px solid #E5E7EB;">
+              <th style="padding:6px 8px;text-align:left;font-weight:500;">Date</th>
+              <th style="padding:6px 8px;text-align:left;font-weight:500;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in location_change_requests %}
+            <tr style="border-bottom:1px solid #F3F4F6;">
+              <td style="padding:6px 8px;">{{ req.requested_date|date:"Y-m-d h:i A" }}</td>
+              <td style="padding:6px 8px;">
+                {% if req.status == 'Approved' %}
+                <span class="config-badge configured">Approved</span>
+                {% elif req.status == 'Rejected' %}
+                <span class="config-badge not-configured">Rejected</span>
+                {% else %}
+                <span class="config-badge pending">Pending</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      {% else %}
+      <div class="st-msg" style="background:#FEE2E2;border-color:#FECACA;color:#991B1B;">
+        <p style="margin:0;">You are not assigned to any center. Please contact your administrator.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- ===== Reports & Tools Card ===== -->
+    <div class="st-card">
+      <div class="st-card-header">
+        <div class="st-card-icon blue">
+          <i class="bi bi-tools"></i>
+        </div>
+        <div>
+          <h4>Reports &amp; Tools</h4>
+        </div>
+      </div>
+
+      <a href="{% url 'staff_history' %}" class="st-link-row">
+        <div class="st-link-icon" style="background:#D1FAE5;color:#065F46;"><i class="bi bi-calendar-check"></i></div>
+        <div class="st-link-text">
+          <p>Attendance Reports</p>
+          <span>View your attendance history</span>
+        </div>
+        <i class="bi bi-chevron-right st-link-arrow"></i>
+      </a>
+
+      <a href="{% url 'staff_history' %}?emg_status=Pending" class="st-link-row">
+        <div class="st-link-icon" style="background:#FEE2E2;color:#991B1B;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="st-link-text">
+          <p>Emergency Reports</p>
+          <span>View emergency alerts you have sent</span>
+        </div>
+        <i class="bi bi-chevron-right st-link-arrow"></i>
+      </a>
+
+      <a href="{% url 'staff_history' %}" class="st-link-row">
+        <div class="st-link-icon" style="background:#FEF3C7;color:#92400E;"><i class="bi bi-clock-history"></i></div>
+        <div class="st-link-text">
+          <p>All History</p>
+          <span>Attendance, emergency, and activity logs</span>
+        </div>
+        <i class="bi bi-chevron-right st-link-arrow"></i>
+      </a>
+    </div>
+
+    <!-- ===== Logout Card ===== -->
+    <div class="st-card">
+      <a href="{% url 'logout' %}" class="st-btn st-btn-danger">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Request Change Modal -->
+<div class="cs-modal-overlay" id="requestModal">
+  <div class="cs-modal" style="max-width:400px;">
+    <h4>Request Location Change</h4>
+    <p class="sub">Explain why the center location needs to be updated.</p>
+    <textarea class="cs-textarea" id="changeReason" placeholder="Examples: Wrong GPS coordinates, Center shifted to new location, Incorrect location"></textarea>
+    <div id="requestError" class="cs-error-text" style="display:none;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="st-btn st-btn-secondary" id="cancelRequestBtn" style="flex:1;">Cancel</button>
+      <button class="st-btn st-btn-primary" id="submitRequestBtn" style="flex:1;">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- Initialize Location Modal -->
+<div class="cs-modal-overlay" id="initModal">
+  <div class="cs-modal" style="max-width:420px;">
+    <h4 id="initModalTitle">Configure Center Location</h4>
+    <p class="sub" id="initModalSub">Step 1: Getting your GPS position</p>
+
+    <div class="step-indicator">
+      <div class="step-dot active" id="step1"></div>
+      <div class="step-dot" id="step2"></div>
+      <div class="step-dot" id="step3"></div>
+    </div>
+
+    <div id="gpsStep">
+      <div class="cs-gps-status">
+        <div class="gps-spinner" id="gpsSpinner"></div>
+        <div class="gps-text">
+          <strong id="gpsStatusTitle">Getting GPS position...</strong>
+          <span id="gpsStatusSub">Please ensure you are outdoors with clear sky view</span>
+        </div>
+      </div>
+      <div id="gpsAccuracyInfo" class="cs-gps-accuracy" style="text-align:center;"></div>
+      <div id="gpsError" class="cs-error-text" style="display:none;"></div>
+    </div>
+
+    <div id="cameraStep" style="display:none;">
+      <div class="cs-camera-box">
+        <video id="initCameraPreview" autoplay playsinline></video>
+        <canvas id="initCapturedCanvas"></canvas>
+        <div class="cs-camera-overlay" id="initFaceLoading">
+          <div class="spinner"></div>
+          <p>Verifying face...</p>
+        </div>
+        <div class="cs-camera-overlay" id="initFaceResult">
+          <div class="cs-result-icon" id="initFaceResultIcon"></div>
+          <p id="initFaceResultMsg"></p>
+        </div>
+      </div>
+      <div class="cs-camera-btns">
+        <button class="capture" id="initCaptureBtn">Capture Selfie</button>
+        <button class="retake" id="initRetakeBtn">Retake</button>
+        <button class="verify" id="initVerifyBtn">Verify &amp; Save</button>
+      </div>
+      <div id="initFaceError" class="cs-error-text" style="display:none;"></div>
+    </div>
+
+    <div id="successStep" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:48px;color:#2FBF8F;margin-bottom:12px;">&#10003;</div>
+      <h4 style="margin:0 0 4px;color:#065F46;">Configuration Successful</h4>
+      <p style="font-size:0.875rem;color:#6B7280;margin:0;">Center location has been saved.</p>
+    </div>
+
+    <div id="initError" class="cs-error-text" style="display:none;text-align:center;"></div>
+    <button class="cs-close-btn" id="initCloseBtn">&times;</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="initToast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:14px 24px;border-radius:14px;font-size:14px;font-weight:500;z-index:99999;text-align:center;max-width:340px;"></div>
+
+<script>
+(function() {
+  var setLocationBtn = document.getElementById('setLocationBtn');
+  var requestChangeBtn = document.getElementById('requestChangeBtn');
+  var initModal = document.getElementById('initModal');
+  var requestModal = document.getElementById('requestModal');
+  var initCloseBtn = document.getElementById('initCloseBtn');
+
+  var gpsStep = document.getElementById('gpsStep');
+  var cameraStep = document.getElementById('cameraStep');
+  var successStep = document.getElementById('successStep');
+  var gpsError = document.getElementById('gpsError');
+  var initError = document.getElementById('initError');
+  var initFaceError = document.getElementById('initFaceError');
+  var gpsAccuracyInfo = document.getElementById('gpsAccuracyInfo');
+  var gpsSpinner = document.getElementById('gpsSpinner');
+  var gpsStatusTitle = document.getElementById('gpsStatusTitle');
+  var gpsStatusSub = document.getElementById('gpsStatusSub');
+
+  var cameraPreview = document.getElementById('initCameraPreview');
+  var capturedCanvas = document.getElementById('initCapturedCanvas');
+  var captureBtn = document.getElementById('initCaptureBtn');
+  var retakeBtn = document.getElementById('initRetakeBtn');
+  var verifyBtn = document.getElementById('initVerifyBtn');
+  var initFaceLoading = document.getElementById('initFaceLoading');
+  var initFaceResult = document.getElementById('initFaceResult');
+  var initFaceResultIcon = document.getElementById('initFaceResultIcon');
+  var initFaceResultMsg = document.getElementById('initFaceResultMsg');
+
+  var step1 = document.getElementById('step1');
+  var step2 = document.getElementById('step2');
+  var step3 = document.getElementById('step3');
+  var initModalTitle = document.getElementById('initModalTitle');
+  var initModalSub = document.getElementById('initModalSub');
+
+  var toast = document.getElementById('initToast');
+
+  var cameraStream = null;
+  var capturedImageData = null;
+  var gpsData = null;
+
+  function showToast(msg, type) {
+    toast.textContent = msg;
+    toast.style.background = type === 'success' ? '#D1FAE5' : type === 'error' ? '#FEE2E2' : '#333';
+    toast.style.color = type === 'success' ? '#065F46' : type === 'error' ? '#991B1B' : '#fff';
+    toast.style.display = 'block';
+    setTimeout(function() { toast.style.display = 'none'; }, 4000);
+  }
+
+  function getCSRFToken() {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var c = cookies[i].trim();
+      if (c.indexOf('csrftoken=') === 0) return decodeURIComponent(c.substring(10));
+    }
+    return '';
+  }
+
+  function closeCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(function(t) { t.stop(); });
+      cameraStream = null;
+    }
+  }
+
+  function resetInitModal() {
+    closeCamera();
+    gpsStep.style.display = 'block';
+    cameraStep.style.display = 'none';
+    successStep.style.display = 'none';
+    gpsError.style.display = 'none';
+    initError.style.display = 'none';
+    initFaceError.style.display = 'none';
+    initFaceLoading.classList.remove('active');
+    initFaceResult.classList.remove('active');
+    capturedImageData = null;
+    gpsData = null;
+    step1.className = 'step-dot active';
+    step2.className = 'step-dot';
+    step3.className = 'step-dot';
+    initModalTitle.textContent = 'Configure Center Location';
+    initModalSub.textContent = 'Step 1: Getting your GPS position';
+    captureBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'none';
+    verifyBtn.style.display = 'none';
+    cameraPreview.style.display = 'block';
+    capturedCanvas.style.display = 'none';
+  }
+
+  function getGPS() {
+    return new Promise(function(resolve, reject) {
+      if (!navigator.geolocation) {
+        reject({ message: 'Geolocation is not supported by this browser.' });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          resolve({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+        },
+        function(err) {
+          var msg = 'Unable to get GPS position. ';
+          if (err.code === 1) msg += 'Location permission denied. Please allow location access.';
+          else if (err.code === 2) msg += 'GPS unavailable. Please enable GPS and try again.';
+          else if (err.code === 3) msg += 'GPS request timed out. Please try again outdoors.';
+          else msg += 'Please try again.';
+          reject({ message: msg });
+        },
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+      );
+    });
+  }
+
+  function openCamera() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } })
+        .then(function(stream) {
+          cameraStream = stream;
+          cameraPreview.srcObject = stream;
+          cameraPreview.style.display = 'block';
+          capturedCanvas.style.display = 'none';
+          captureBtn.style.display = 'inline-block';
+          retakeBtn.style.display = 'none';
+          verifyBtn.style.display = 'none';
+          initFaceLoading.classList.remove('active');
+          initFaceResult.classList.remove('active');
+          initFaceError.style.display = 'none';
+          capturedImageData = null;
+        })
+        .catch(function() {
+          initFaceError.textContent = 'Camera access denied. Please allow camera permissions.';
+          initFaceError.style.display = 'block';
+        });
+    } else {
+      initFaceError.textContent = 'Camera not supported on this device.';
+      initFaceError.style.display = 'block';
+    }
+  }
+
+  function captureSelfie() {
+    var ctx = capturedCanvas.getContext('2d');
+    capturedCanvas.width = cameraPreview.videoWidth;
+    capturedCanvas.height = cameraPreview.videoHeight;
+    ctx.drawImage(cameraPreview, 0, 0);
+    capturedImageData = capturedCanvas.toDataURL('image/jpeg', 0.9);
+    cameraPreview.style.display = 'none';
+    capturedCanvas.style.display = 'block';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    verifyBtn.style.display = 'inline-block';
+    closeCamera();
+  }
+
+  function retakeSelfie() {
+    capturedImageData = null;
+    capturedCanvas.style.display = 'none';
+    captureBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'none';
+    verifyBtn.style.display = 'none';
+    initFaceResult.classList.remove('active');
+    initFaceError.style.display = 'none';
+    openCamera();
+  }
+
+  function verifyAndSave() {
+    if (!capturedImageData) {
+      initFaceError.textContent = 'Please capture a selfie first.';
+      initFaceError.style.display = 'block';
+      return;
+    }
+
+    initFaceLoading.classList.add('active');
+    initFaceResult.classList.remove('active');
+    initFaceError.style.display = 'none';
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'none';
+    verifyBtn.style.display = 'none';
+
+    fetch('{% url "staff_verify_face" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ image: capturedImageData })
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      initFaceLoading.classList.remove('active');
+
+      if (data.success && data.verified) {
+        initFaceResult.classList.add('active');
+        initFaceResult.style.background = 'rgba(47,191,143,0.15)';
+        initFaceResultIcon.innerHTML = '&#10003;';
+        initFaceResultIcon.style.color = '#2FBF8F';
+        initFaceResultMsg.textContent = 'Face verified! Saving location...';
+        initFaceResultMsg.style.color = '#065F46';
+
+        var payload = {
+          latitude: gpsData.latitude,
+          longitude: gpsData.longitude,
+          gps_accuracy: gpsData.accuracy,
+          face_verified: true,
+        };
+
+        fetch('{% url "staff_configure_center" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(function(resp) { return resp.json(); })
+        .then(function(saveData) {
+          if (saveData.success) {
+            step3.className = 'step-dot done';
+            gpsStep.style.display = 'none';
+            cameraStep.style.display = 'none';
+            successStep.style.display = 'block';
+            initModalTitle.textContent = 'Success!';
+            initModalSub.textContent = 'Center location configured successfully';
+
+            setTimeout(function() {
+              initModal.classList.remove('active');
+              showToast('Center location configured successfully!', 'success');
+              setTimeout(function() { location.reload(); }, 500);
+            }, 1500);
+          } else {
+            initFaceResult.classList.add('active');
+            initFaceResult.style.background = 'rgba(239,68,68,0.1)';
+            initFaceResultIcon.innerHTML = '&#10007;';
+            initFaceResultIcon.style.color = '#EF4444';
+            initFaceResultMsg.textContent = saveData.error || 'Failed to save configuration.';
+            initFaceResultMsg.style.color = '#EF4444';
+            captureBtn.style.display = 'none';
+            retakeBtn.style.display = 'inline-block';
+            retakeBtn.textContent = 'Try Again';
+            verifyBtn.style.display = 'none';
+          }
+        })
+        .catch(function() {
+          initFaceLoading.classList.remove('active');
+          initFaceError.textContent = 'Network error. Please try again.';
+          initFaceError.style.display = 'block';
+        });
+      } else {
+        initFaceResult.classList.add('active');
+        initFaceResult.style.background = 'rgba(239,68,68,0.1)';
+        initFaceResultIcon.innerHTML = '&#10007;';
+        initFaceResultIcon.style.color = '#EF4444';
+        initFaceResultMsg.textContent = data.message || 'Face verification failed.';
+        initFaceResultMsg.style.color = '#EF4444';
+
+        setTimeout(function() {
+          initFaceResult.classList.remove('active');
+          retakeSelfie();
+        }, 2000);
+      }
+    })
+    .catch(function() {
+      initFaceLoading.classList.remove('active');
+      initFaceError.textContent = 'Network error. Please try again.';
+      initFaceError.style.display = 'block';
+      captureBtn.style.display = 'none';
+      retakeBtn.style.display = 'inline-block';
+      verifyBtn.style.display = 'inline-block';
+    });
+  }
+
+  if (setLocationBtn && setLocationBtn.disabled === false) {
+    setLocationBtn.addEventListener('click', function() {
+      resetInitModal();
+      initModal.classList.add('active');
+
+      gpsSpinner.className = 'gps-spinner';
+      gpsStatusTitle.textContent = 'Getting GPS position...';
+      gpsStatusSub.textContent = 'Please ensure you are outdoors with clear sky view';
+      gpsError.style.display = 'none';
+      gpsAccuracyInfo.textContent = '';
+
+      getGPS().then(function(pos) {
+        gpsData = pos;
+
+        if (pos.accuracy > 20) {
+          gpsSpinner.className = 'gps-icon error';
+          gpsSpinner.innerHTML = '&#10007;';
+          gpsStatusTitle.textContent = 'GPS accuracy too low';
+          gpsStatusSub.textContent = 'Accuracy: ' + Math.round(pos.accuracy) + 'm (max 20m allowed)';
+          gpsAccuracyInfo.textContent = 'Please move outdoors and try again.';
+          gpsError.textContent = 'GPS accuracy is too low (' + Math.round(pos.accuracy) + 'm). Please move outdoors and try again.';
+          gpsError.style.display = 'block';
+          return;
+        }
+
+        gpsSpinner.className = 'gps-icon success';
+        gpsSpinner.innerHTML = '&#10003;';
+        gpsStatusTitle.textContent = 'GPS acquired!';
+        gpsStatusSub.textContent = 'Accuracy: ' + Math.round(pos.accuracy) + 'm';
+        gpsAccuracyInfo.textContent = '';
+
+        step1.className = 'step-dot done';
+        step2.className = 'step-dot active';
+        initModalSub.textContent = 'Step 2: Capture a live selfie';
+
+        setTimeout(function() {
+          gpsStep.style.display = 'none';
+          cameraStep.style.display = 'block';
+          openCamera();
+        }, 800);
+      }).catch(function(err) {
+        gpsSpinner.className = 'gps-icon error';
+        gpsSpinner.innerHTML = '&#10007;';
+        gpsStatusTitle.textContent = 'GPS failed';
+        gpsStatusSub.textContent = 'Could not get your location';
+        gpsError.textContent = err.message || 'Unable to get GPS position. Please try again.';
+        gpsError.style.display = 'block';
+      });
+    });
+  }
+
+  captureBtn.addEventListener('click', captureSelfie);
+  retakeBtn.addEventListener('click', retakeSelfie);
+  verifyBtn.addEventListener('click', verifyAndSave);
+
+  initCloseBtn.addEventListener('click', function() {
+    initModal.classList.remove('active');
+    closeCamera();
+  });
+
+  initModal.addEventListener('click', function(e) {
+    if (e.target === initModal) {
+      initModal.classList.remove('active');
+      closeCamera();
+    }
+  });
+
+  var pendingChangeGPS = null;
+
+  if (requestChangeBtn) {
+    requestChangeBtn.addEventListener('click', function() {
+      showToast('Getting your GPS position...', 'success');
+      getGPS().then(function(pos) {
+        pendingChangeGPS = pos;
+        requestModal.classList.add('active');
+        document.getElementById('changeReason').value = '';
+        document.getElementById('requestError').style.display = 'none';
+      }).catch(function(err) {
+        showToast(err.message || 'Unable to get GPS position. Please try again.', 'error');
+      });
+    });
+  }
+
+  document.getElementById('cancelRequestBtn').addEventListener('click', function() {
+    requestModal.classList.remove('active');
+    pendingChangeGPS = null;
+  });
+
+  requestModal.addEventListener('click', function(e) {
+    if (e.target === requestModal) {
+      requestModal.classList.remove('active');
+      pendingChangeGPS = null;
+    }
+  });
+
+  document.getElementById('submitRequestBtn').addEventListener('click', function() {
+    var reason = document.getElementById('changeReason').value.trim();
+    var errorEl = document.getElementById('requestError');
+    var btn = this;
+
+    if (!reason) {
+      errorEl.textContent = 'Please provide a reason for the location change.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    var payload = { reason: reason };
+    if (pendingChangeGPS) {
+      payload.new_latitude = pendingChangeGPS.latitude;
+      payload.new_longitude = pendingChangeGPS.longitude;
+    }
+
+    fetch('{% url "staff_request_location_change" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(function(resp) { return resp.json(); })
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Submit Request';
+      if (data.success) {
+        requestModal.classList.remove('active');
+        pendingChangeGPS = null;
+        showToast(data.message || 'Request submitted successfully.', 'success');
+        setTimeout(function() { location.reload(); }, 1000);
+      } else {
+        errorEl.textContent = data.error || 'Failed to submit request.';
+        errorEl.style.display = 'block';
+      }
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = 'Submit Request';
+      errorEl.textContent = 'Network error. Please try again.';
+      errorEl.style.display = 'block';
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -2,11 +2,36 @@ from django.conf import settings
 from django.db import models
 
 
+class AuditLog(models.Model):
+    action = models.CharField(max_length=100)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs'
+    )
+    details = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    browser_info = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.action} - {self.user}'
+
+
 class Center(models.Model):
     class Status(models.TextChoices):
         ACTIVE = 'Active', 'Active'
         INACTIVE = 'Inactive', 'Inactive'
         PENDING = 'Pending', 'Pending'
+
+    class ConfigStatus(models.TextChoices):
+        NOT_CONFIGURED = 'NOT_CONFIGURED', 'Not Configured'
+        CONFIGURED = 'CONFIGURED', 'Configured'
 
     center_name = models.CharField(max_length=255)
     center_code = models.CharField(max_length=20, unique=True)
@@ -24,6 +49,22 @@ class Center(models.Model):
         related_name='teaching_center',
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    configuration_status = models.CharField(
+        max_length=20,
+        choices=ConfigStatus.choices,
+        default=ConfigStatus.NOT_CONFIGURED,
+    )
+    configured_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='configured_centers',
+    )
+    configured_date = models.DateTimeField(null=True, blank=True)
+    gps_accuracy = models.FloatField(null=True, blank=True, help_text='GPS accuracy in meters at configuration time')
+    browser_info = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -32,6 +73,49 @@ class Center(models.Model):
 
     def __str__(self):
         return self.center_name
+
+
+class CenterLocationChangeRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'Pending', 'Pending'
+        APPROVED = 'Approved', 'Approved'
+        REJECTED = 'Rejected', 'Rejected'
+
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='location_change_requests',
+    )
+    center = models.ForeignKey(
+        Center,
+        on_delete=models.CASCADE,
+        related_name='location_change_requests',
+    )
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    requested_date = models.DateTimeField(auto_now_add=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_location_changes',
+    )
+    approved_date = models.DateTimeField(null=True, blank=True)
+    used_permission = models.BooleanField(default=False)
+    old_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    old_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    new_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    new_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-requested_date']
+
+    def __str__(self):
+        return f'{self.teacher.full_name} - {self.center.center_name} ({self.status})'
+
+    def can_configure(self):
+        return self.status == self.Status.APPROVED and not self.used_permission
 
 
 class Attendance(models.Model):

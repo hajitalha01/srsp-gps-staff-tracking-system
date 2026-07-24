@@ -1,459 +1,372 @@
-<!DOCTYPE html>
+{% extends 'base.html' %}
 {% load static %}
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Center Management — Admin</title>
+{% block title %}Center Management — Admin{% endblock %}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/center_management.css' %}">
+{% endblock %}
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block content %}
+<div style="display:flex;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);min-height:100vh">
+  {% include 'partials/admin_sidebar.html' with active='centers' %}
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <h3 style="font-size:18px;margin:0">Center List</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin:2px 0 0">Manage all education centers</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <a href="{% url 'admin_notifications' %}" style="text-decoration:none;color:inherit"><i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary)"></i></a>
+        <a href="{% url 'admin_alerts' %}" style="text-decoration:none;color:inherit"><i class="ti ti-alert-triangle" style="font-size:18px;color:var(--text-danger)"></i></a>
+        <div style="width:30px;height:30px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-accent)">{{ user_initials|default:"AD" }}</div>
+      </div>
+    </div>
 
-  <link rel="stylesheet" href="{% static 'css/admin_dashboard.css' %}">
-  <link rel="stylesheet" href="{% static 'css/center_management.css' %}">
-</head>
-<body>
+    <div class="cm-page-header">
+      <div>
+        <h3 class="cm-page-title">Center List</h3>
+        <p class="cm-page-subtitle">Manage all education centers</p>
+      </div>
+      <div class="cm-header-actions">
+        <button class="cm-btn-filter" aria-label="Filter centers">
+          <i class="bi bi-funnel"></i>
+          Filter
+        </button>
+        <button class="cm-btn-add" data-action="add-center">
+          <i class="bi bi-plus-lg"></i>
+          Add New Center
+        </button>
+      </div>
+    </div>
 
-  <div class="dash-wrapper">
-
-    <aside class="dash-sidebar" id="sidebar">
-
-      <div class="sidebar-brand">
-        <div class="brand-icon">
-          <i class="bi bi-heart-pulse-fill"></i>
+    <form class="cm-search-card" id="centerFilterForm" method="get">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6 col-12">
+          <label class="cm-filter-label" for="filterCity">City</label>
+          <select name="city" id="filterCity" class="cm-input cm-select">
+            <option value="">All Cities</option>
+            {% for city in cities %}
+            <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
+            {% endfor %}
+          </select>
         </div>
-        <span class="brand-text">NGO System</span>
+        <div class="col-md-3 col-sm-6 col-12">
+          <label class="cm-filter-label" for="filterDistrict">District</label>
+          <select name="district" id="filterDistrict" class="cm-input cm-select">
+            <option value="">All Districts</option>
+            {% for district in districts %}
+            <option value="{{ district }}" {% if selected_district == district %}selected{% endif %}>{{ district }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3 col-sm-6 col-12">
+          <div class="d-flex gap-2">
+            <button type="submit" class="cm-btn-filter flex-fill justify-content-center" id="filterBtn">
+              <i class="bi bi-funnel"></i> Filter
+            </button>
+            <button type="button" class="cm-btn-filter flex-fill justify-content-center" id="clearFilterBtn" style="background:#fff;border-color:var(--gray-300);">
+              <i class="bi bi-x-circle"></i> Clear
+            </button>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 col-12">
+          <div class="cm-search-wrap">
+            <i class="bi bi-search cm-search-icon"></i>
+            <input type="text" id="centerSearch" class="cm-search-input" placeholder="Search...">
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <div class="cm-table-card">
+      <div class="cm-table-scroll">
+        <table class="cm-table" id="centerTable">
+          <thead>
+            <tr>
+              <th>Center Name</th>
+              <th>City</th>
+              <th>District</th>
+              <th>Assigned Teacher</th>
+              <th>Config Status</th>
+              <th>Status</th>
+              <th class="cm-th-action">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if centers %}
+              {% for c in centers %}
+              <tr data-id="{{ c.id }}">
+                <td><span class="cm-name">{{ c.center_name }}</span></td>
+                <td class="cm-cell-muted">{{ c.city|default:"--" }}</td>
+                <td class="cm-cell-muted">{{ c.district }}</td>
+                <td>
+                  {% if c.assigned_teacher %}
+                  <div class="cm-teacher-cell">
+                    {% if c.assigned_teacher.profile_photo %}
+                    <img src="{{ c.assigned_teacher.profile_photo.url }}" alt="{{ c.assigned_teacher.user.full_name }}" class="cm-avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                    {% else %}
+                    <span class="cm-avatar" style="background:#E3F3EC;color:#1F5C40;">{{ c.assigned_teacher.user.full_name|first|upper }}</span>
+                    {% endif %}
+                    <span>{{ c.assigned_teacher.user.full_name }}</span>
+                  </div>
+                  {% else %}
+                  <span class="cm-cell-muted">Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if c.configuration_status == 'CONFIGURED' %}
+                  <span class="cm-badge" style="background:#D1FAE5;color:#065F46;"><i class="bi bi-check-circle-fill"></i> Configured</span>
+                  {% else %}
+                  <span class="cm-badge" style="background:#FEE2E2;color:#991B1B;"><i class="bi bi-exclamation-circle-fill"></i> Not Configured</span>
+                  {% endif %}
+                </td>
+                <td><span class="cm-badge cm-badge-{{ c.status|lower }}"><i class="bi bi-circle-fill"></i> {{ c.status }}</span></td>
+                <td class="cm-action-cell">
+                  <button class="cm-action-btn cm-action-edit" data-action="edit" title="Edit" aria-label="Edit {{ c.center_name }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="cm-action-btn cm-action-delete" data-action="delete" title="Delete" aria-label="Delete {{ c.center_name }}">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            {% elif filtered %}
+            <tr class="empty-row">
+              <td colspan="7" class="text-center py-5 text-muted empty-state-cell">
+                <i class="bi bi-funnel fs-1 d-block mb-3"></i>
+                <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No centers found matching the selected filters.</h6>
+                <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Try adjusting your City or District selection.</p>
+              </td>
+            </tr>
+            {% else %}
+            <tr class="empty-row">
+              <td colspan="7" class="text-center py-5 text-muted empty-state-cell">
+                <i class="bi bi-building fs-1 d-block mb-3"></i>
+                <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No education centers found.</h6>
+                <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Click 'Add Center' to create the first education center.</p>
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
       </div>
 
-      <nav class="sidebar-nav">
-        <ul class="nav-list">
-          <li><a href="{% url 'admin_dashboard' %}" class="nav-link"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a></li>
-          <li><a href="{% url 'admin_staff' %}" class="nav-link"><i class="bi bi-people"></i><span>Staff Management</span></a></li>
-          <li><a href="{% url 'admin_centers' %}" class="nav-link active"><i class="bi bi-building"></i><span>Center Management</span></a></li>
-          <li><a href="{% url 'admin_attendance' %}" class="nav-link"><i class="bi bi-calendar-check"></i><span>Attendance</span></a></li>
-          <li><a href="{% url 'admin_reports' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Reports</span></a></li>
-          <li><a href="{% url 'admin_alerts' %}" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span>Emergency Alerts</span></a></li>
-          <li><a href="{% url 'admin_notifications' %}" class="nav-link"><i class="bi bi-bell"></i><span>Notifications</span></a></li>
-          <li><a href="{% url 'admin_profile' %}" class="nav-link"><i class="bi bi-person-circle"></i><span>Profile</span></a></li>
-          <li><a href="{% url 'admin_settings' %}" class="nav-link"><i class="bi bi-gear"></i><span>Settings</span></a></li>
-        </ul>
-      </nav>
-
-      <div class="sidebar-footer">
-        <a href="{% url 'login' %}" class="nav-link logout-link">
-          <i class="bi bi-box-arrow-right"></i><span>Logout</span>
-        </a>
-      </div>
-
-    </aside>
-
-    <div class="dash-main">
-
-      <header class="dash-topbar">
-
-        <div class="topbar-left">
-          <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle sidebar">
-            <i class="bi bi-list"></i>
+      <div class="cm-table-footer">
+        <span class="cm-footer-info">Showing {{ center_count|default:"0" }} of {{ total_centers|default:"0" }} centers</span>
+        <nav class="cm-pagination">
+          <button class="cm-page-btn disabled" disabled aria-label="Previous page">
+            <i class="bi bi-chevron-left"></i>
           </button>
-          <div class="topbar-title">
-            <h4>Center List</h4>
-            <p>Manage all education centers</p>
-          </div>
+          <button class="cm-page-btn active" aria-current="page">1</button>
+          <button class="cm-page-btn disabled" disabled aria-label="Next page">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal fade" id="centerModal" tabindex="-1" aria-labelledby="centerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content cm-modal-content">
+
+      <div class="modal-header cm-modal-header">
+        <div class="cm-modal-title-wrap">
+          <span class="cm-modal-icon"><i class="bi bi-building-add"></i></span>
+          <h5 class="modal-title fw-semibold cm-modal-title" id="centerModalLabel">Add New Center</h5>
         </div>
+        <button type="button" class="btn-close cm-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
 
-        <div class="topbar-right">
+      <div class="modal-body cm-modal-body">
+        <form id="centerForm" novalidate>
+          {% csrf_token %}
 
-          <a href="{% url 'admin_notifications' %}" class="topbar-icon-btn position-relative" title="Notifications">
-            <i class="bi bi-bell-fill"></i>
-            <span class="badge-count">{{ unread_notifications_count }}</span>
-          </a>
+          <input type="hidden" name="center_id" id="id_center_id" value="">
 
-          <a href="{% url 'admin_alerts' %}" class="topbar-icon-btn position-relative" title="Emergency Alerts">
-            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
-            <span class="badge-count" style="background:#EF4444;">{{ emergency_alerts_count|default:"0" }}</span>
-          </a>
+          <div id="centerFormErrors" class="alert alert-danger d-none cm-alert"></div>
 
-          <div class="topbar-separator"></div>
-
-          <div class="date-picker">
-            <i class="bi bi-calendar3"></i>
-            <span id="currentDate"></span>
-          </div>
-
-          <div class="topbar-separator"></div>
-
-          <div class="dropdown">
-            <button class="profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <div class="profile-avatar">{{ user_initials|default:"AD" }}</div>
-              <div class="profile-info d-none d-md-block">
-                <span class="profile-name">{{ user.get_full_name|default:"Admin" }}</span>
-                <span class="profile-role">{{ user_role|default:"Administrator" }}</span>
-              </div>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width:180px;border-radius:12px;">
-              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_profile' %}"><i class="bi bi-person-circle me-2"></i>Profile</a></li>
-              <li><a class="dropdown-item py-2 px-3" href="{% url 'admin_notifications' %}"><i class="bi bi-gear me-2"></i>Settings</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><a class="dropdown-item py-2 px-3 text-danger" href="{% url 'login' %}"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
-            </ul>
-          </div>
-
-        </div>
-
-      </header>
-
-      <div class="dash-content">
-
-        <div class="cm-page-header">
-          <div>
-            <h3 class="cm-page-title">Center List</h3>
-            <p class="cm-page-subtitle">Manage all education centers</p>
-          </div>
-          <div class="cm-header-actions">
-            <button class="cm-btn-filter" aria-label="Filter centers">
-              <i class="bi bi-funnel"></i>
-              Filter
-            </button>
-            <button class="cm-btn-add" data-action="add-center">
-              <i class="bi bi-plus-lg"></i>
-              Add New Center
-            </button>
-          </div>
-        </div>
-
-        <form class="cm-search-card" id="centerFilterForm" method="get">
-          <div class="row g-2 align-items-end">
-            <div class="col-md-3 col-sm-6 col-12">
-              <label class="cm-filter-label" for="filterCity">City</label>
-              <select name="city" id="filterCity" class="cm-input cm-select">
-                <option value="">All Cities</option>
-                {% for city in cities %}
-                <option value="{{ city }}" {% if selected_city == city %}selected{% endif %}>{{ city }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-3 col-sm-6 col-12">
-              <label class="cm-filter-label" for="filterDistrict">District</label>
-              <select name="district" id="filterDistrict" class="cm-input cm-select">
-                <option value="">All Districts</option>
-                {% for district in districts %}
-                <option value="{{ district }}" {% if selected_district == district %}selected{% endif %}>{{ district }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-3 col-sm-6 col-12">
-              <div class="d-flex gap-2">
-                <button type="submit" class="cm-btn-filter flex-fill justify-content-center" id="filterBtn">
-                  <i class="bi bi-funnel"></i> Filter
-                </button>
-                <button type="button" class="cm-btn-filter flex-fill justify-content-center" id="clearFilterBtn" style="background:#fff;border-color:var(--gray-300);">
-                  <i class="bi bi-x-circle"></i> Clear
-                </button>
+          <div class="row g-3">
+            <div class="col-md-6 col-12">
+              <div class="cm-field">
+                <label class="cm-field-label" for="id_center_name">Center Name <span class="text-danger">*</span></label>
+                <input type="text" name="center_name" id="id_center_name" class="cm-input" placeholder="Enter center name" required minlength="3">
               </div>
             </div>
-            <div class="col-md-3 col-sm-6 col-12">
-              <div class="cm-search-wrap">
-                <i class="bi bi-search cm-search-icon"></i>
-                <input type="text" id="centerSearch" class="cm-search-input" placeholder="Search...">
+            <div class="col-md-6 col-12">
+              <div class="cm-field">
+                <label class="cm-field-label" for="id_city">City <span class="text-danger">*</span></label>
+                <input type="text" name="city" id="id_city" class="cm-input" placeholder="Enter city" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="cm-field">
+                <label class="cm-field-label" for="id_complete_address">Complete Address <span class="text-danger">*</span></label>
+                <textarea name="complete_address" id="id_complete_address" class="cm-input cm-textarea" rows="2" placeholder="Enter complete address" required minlength="10"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-6 col-12">
+              <div class="cm-field">
+                <label class="cm-field-label" for="id_district">District <span class="text-danger">*</span></label>
+                <input type="text" name="district" id="id_district" class="cm-input" placeholder="Enter district" required>
+              </div>
+            </div>
+            <div class="col-md-6 col-12">
+              <div class="cm-field">
+                <label class="cm-field-label" for="id_assigned_teacher">Assigned Teacher</label>
+                <div class="cm-select-wrap">
+                  <select name="assigned_teacher" id="id_assigned_teacher" class="cm-input cm-select">
+                    <option value="">-- Select Teacher --</option>
+                    {% for teacher in available_teachers %}
+                    <option value="{{ teacher.id }}">{{ teacher.user.full_name }}</option>
+                    {% endfor %}
+                  </select>
+                  <i class="bi bi-chevron-down cm-select-arrow"></i>
+                </div>
+                <small class="cm-field-hint">If no teacher selected, status will be Pending.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="cm-field">
+                <label class="cm-field-label">Center Location <span class="text-danger">*</span></label>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                  <button type="button" class="cm-btn cm-btn-outline" id="pickLocationBtn" style="display:inline-flex;align-items:center;gap:6px;">
+                    <i class="bi bi-geo-alt-fill"></i> Pick Location on Map
+                  </button>
+                  <span id="locationDisplay" style="font-size:13px;color:var(--text-secondary);">No location selected</span>
+                </div>
+                <input type="hidden" name="latitude" id="id_latitude" value="">
+                <input type="hidden" name="longitude" id="id_longitude" value="">
+                <small class="cm-field-hint">Click the button to place a marker on the map.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-6 col-12">
+              <div class="cm-field">
+                <label class="cm-field-label" for="id_allowed_radius">Allowed Radius</label>
+                <div class="cm-select-wrap">
+                  <select name="allowed_radius" id="id_allowed_radius" class="cm-input cm-select">
+                    <option value="50">50 meters</option>
+                    <option value="100" selected>100 meters</option>
+                    <option value="150">150 meters</option>
+                    <option value="200">200 meters</option>
+                    <option value="300">300 meters</option>
+                    <option value="500">500 meters</option>
+                  </select>
+                  <i class="bi bi-chevron-down cm-select-arrow"></i>
+                </div>
               </div>
             </div>
           </div>
         </form>
+      </div>
 
-        <div class="cm-table-card">
-          <div class="cm-table-scroll">
-            <table class="cm-table" id="centerTable">
-              <thead>
-                <tr>
-                  <th>Center Name</th>
-                  <th>City</th>
-                  <th>District</th>
-                  <th>Assigned Teacher</th>
-                  <th>Status</th>
-                  <th class="cm-th-action">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% if centers %}
-                  {% for c in centers %}
-                  <tr data-id="{{ c.id }}">
-                    <td><span class="cm-name">{{ c.center_name }}</span></td>
-                    <td class="cm-cell-muted">{{ c.city|default:"--" }}</td>
-                    <td class="cm-cell-muted">{{ c.district }}</td>
-                    <td>
-                      {% if c.assigned_teacher %}
-                      <div class="cm-teacher-cell">
-                        {% if c.assigned_teacher.profile_photo %}
-                        <img src="{{ c.assigned_teacher.profile_photo.url }}" alt="{{ c.assigned_teacher.user.full_name }}" class="cm-avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
-                        {% else %}
-                        <span class="cm-avatar" style="background:#E3F3EC;color:#1F5C40;">{{ c.assigned_teacher.user.full_name|first|upper }}</span>
-                        {% endif %}
-                        <span>{{ c.assigned_teacher.user.full_name }}</span>
-                      </div>
-                      {% else %}
-                      <span class="cm-cell-muted">Pending</span>
-                      {% endif %}
-                    </td>
-                    <td><span class="cm-badge cm-badge-{{ c.status|lower }}"><i class="bi bi-circle-fill"></i> {{ c.status }}</span></td>
-                    <td class="cm-action-cell">
-                      <button class="cm-action-btn cm-action-edit" data-action="edit" title="Edit" aria-label="Edit {{ c.center_name }}">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button class="cm-action-btn cm-action-delete" data-action="delete" title="Delete" aria-label="Delete {{ c.center_name }}">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                {% elif filtered %}
-                <tr class="empty-row">
-                  <td colspan="6" class="text-center py-5 text-muted empty-state-cell">
-                    <i class="bi bi-funnel fs-1 d-block mb-3"></i>
-                    <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No centers found matching the selected filters.</h6>
-                    <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Try adjusting your City or District selection.</p>
-                  </td>
-                </tr>
-                {% else %}
-                <tr class="empty-row">
-                  <td colspan="6" class="text-center py-5 text-muted empty-state-cell">
-                    <i class="bi bi-building fs-1 d-block mb-3"></i>
-                    <h6 class="fw-semibold mb-1" style="color:var(--gray-600);">No education centers found.</h6>
-                    <p class="mb-0" style="color:var(--gray-500);font-size:0.85rem;">Click 'Add Center' to create the first education center.</p>
-                  </td>
-                </tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="cm-table-footer">
-            <span class="cm-footer-info">Showing {{ center_count|default:"0" }} of {{ total_centers|default:"0" }} centers</span>
-            <nav class="cm-pagination">
-              <button class="cm-page-btn disabled" disabled aria-label="Previous page">
-                <i class="bi bi-chevron-left"></i>
-              </button>
-              <button class="cm-page-btn active" aria-current="page">1</button>
-              <button class="cm-page-btn disabled" disabled aria-label="Next page">
-                <i class="bi bi-chevron-right"></i>
-              </button>
-            </nav>
-          </div>
-        </div>
-
+      <div class="modal-footer cm-modal-footer">
+        <button type="button" class="cm-btn cm-btn-clear" id="clearCenterBtn">
+          <i class="bi bi-eraser"></i> Clear
+        </button>
+        <button type="button" class="cm-btn cm-btn-cancel" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="cm-btn cm-btn-save" id="saveCenterBtn">
+          <i class="bi bi-save"></i>
+          <span id="saveCenterBtnText">Save Center</span>
+          <span id="saveCenterBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+        </button>
       </div>
 
     </div>
-
   </div>
+</div>
 
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <div class="modal fade" id="centerModal" tabindex="-1" aria-labelledby="centerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content cm-modal-content">
-
-        <div class="modal-header cm-modal-header">
-          <div class="cm-modal-title-wrap">
-            <span class="cm-modal-icon"><i class="bi bi-building-add"></i></span>
-            <h5 class="modal-title fw-semibold cm-modal-title" id="centerModalLabel">Add New Center</h5>
-          </div>
-          <button type="button" class="btn-close cm-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="deleteCenterModal" tabindex="-1" aria-labelledby="deleteCenterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="border:none;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+      <div class="modal-body text-center" style="padding:2rem 1.75rem;">
+        <div class="mb-3">
+          <span style="display:inline-flex;width:56px;height:56px;border-radius:50%;background:#FEE2E2;align-items:center;justify-content:center;">
+            <i class="bi bi-exclamation-triangle-fill" style="font-size:1.5rem;color:#EF4444;"></i>
+          </span>
         </div>
-
-        <div class="modal-body cm-modal-body">
-          <form id="centerForm" novalidate>
-            {% csrf_token %}
-
-            <input type="hidden" name="center_id" id="id_center_id" value="">
-
-            <div id="centerFormErrors" class="alert alert-danger d-none cm-alert"></div>
-
-            <div class="row g-3">
-              <div class="col-md-6 col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label" for="id_center_name">Center Name <span class="text-danger">*</span></label>
-                  <input type="text" name="center_name" id="id_center_name" class="cm-input" placeholder="Enter center name" required minlength="3">
-                </div>
-              </div>
-              <div class="col-md-6 col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label" for="id_city">City <span class="text-danger">*</span></label>
-                  <input type="text" name="city" id="id_city" class="cm-input" placeholder="Enter city" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label" for="id_complete_address">Complete Address <span class="text-danger">*</span></label>
-                  <textarea name="complete_address" id="id_complete_address" class="cm-input cm-textarea" rows="2" placeholder="Enter complete address" required minlength="10"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-md-6 col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label" for="id_district">District <span class="text-danger">*</span></label>
-                  <input type="text" name="district" id="id_district" class="cm-input" placeholder="Enter district" required>
-                </div>
-              </div>
-              <div class="col-md-6 col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label" for="id_assigned_teacher">Assigned Teacher</label>
-                  <div class="cm-select-wrap">
-                    <select name="assigned_teacher" id="id_assigned_teacher" class="cm-input cm-select">
-                      <option value="">-- Select Teacher --</option>
-                      {% for teacher in available_teachers %}
-                      <option value="{{ teacher.id }}">{{ teacher.user.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                    <i class="bi bi-chevron-down cm-select-arrow"></i>
-                  </div>
-                  <small class="cm-field-hint">If no teacher selected, status will be Pending.</small>
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label">Center Location <span class="text-danger">*</span></label>
-                  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                    <button type="button" class="cm-btn cm-btn-outline" id="pickLocationBtn" style="display:inline-flex;align-items:center;gap:6px;">
-                      <i class="bi bi-geo-alt-fill"></i> Pick Location on Map
-                    </button>
-                    <span id="locationDisplay" style="font-size:13px;color:var(--text-secondary);">No location selected</span>
-                  </div>
-                  <input type="hidden" name="latitude" id="id_latitude" value="">
-                  <input type="hidden" name="longitude" id="id_longitude" value="">
-                  <small class="cm-field-hint">Click the button to place a marker on the map.</small>
-                </div>
-              </div>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-md-6 col-12">
-                <div class="cm-field">
-                  <label class="cm-field-label" for="id_allowed_radius">Allowed Radius</label>
-                  <div class="cm-select-wrap">
-                    <select name="allowed_radius" id="id_allowed_radius" class="cm-input cm-select">
-                      <option value="50">50 meters</option>
-                      <option value="100" selected>100 meters</option>
-                      <option value="150">150 meters</option>
-                      <option value="200">200 meters</option>
-                      <option value="300">300 meters</option>
-                      <option value="500">500 meters</option>
-                    </select>
-                    <i class="bi bi-chevron-down cm-select-arrow"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        <div class="modal-footer cm-modal-footer">
-          <button type="button" class="cm-btn cm-btn-clear" id="clearCenterBtn">
-            <i class="bi bi-eraser"></i> Clear
-          </button>
-          <button type="button" class="cm-btn cm-btn-cancel" data-bs-dismiss="modal">
-            Cancel
-          </button>
-          <button type="button" class="cm-btn cm-btn-save" id="saveCenterBtn">
-            <i class="bi bi-save"></i>
-            <span id="saveCenterBtnText">Save Center</span>
-            <span id="saveCenterBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+        <h5 class="fw-semibold mb-1" style="color:#1F2937;">Delete Center</h5>
+        <p class="text-muted mb-3" style="font-size:0.875rem;">Are you sure you want to delete <strong id="deleteCenterName">this center</strong>?</p>
+        <input type="hidden" id="deleteCenterId" value="">
+        <div class="d-flex gap-2 justify-content-center">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius:10px;padding:0.5rem 1.5rem;font-weight:500;">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteCenterBtn" style="border-radius:10px;padding:0.5rem 1.5rem;font-weight:500;">
+            <span id="deleteCenterBtnText">Delete</span>
+            <span id="deleteCenterBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
           </button>
         </div>
-
       </div>
     </div>
   </div>
+</div>
 
-  <div class="modal fade" id="deleteCenterModal" tabindex="-1" aria-labelledby="deleteCenterModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content" style="border:none;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-        <div class="modal-body text-center" style="padding:2rem 1.75rem;">
-          <div class="mb-3">
-            <span style="display:inline-flex;width:56px;height:56px;border-radius:50%;background:#FEE2E2;align-items:center;justify-content:center;">
-              <i class="bi bi-exclamation-triangle-fill" style="font-size:1.5rem;color:#EF4444;"></i>
-            </span>
-          </div>
-          <h5 class="fw-semibold mb-1" style="color:#1F2937;">Delete Center</h5>
-          <p class="text-muted mb-3" style="font-size:0.875rem;">Are you sure you want to delete <strong id="deleteCenterName">this center</strong>?</p>
-          <input type="hidden" id="deleteCenterId" value="">
-          <div class="d-flex gap-2 justify-content-center">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius:10px;padding:0.5rem 1.5rem;font-weight:500;">Cancel</button>
-            <button type="button" class="btn btn-danger" id="confirmDeleteCenterBtn" style="border-radius:10px;padding:0.5rem 1.5rem;font-weight:500;">
-              <span id="deleteCenterBtnText">Delete</span>
-              <span id="deleteCenterBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
-            </button>
-          </div>
+<div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content cm-modal-content">
+      <div class="modal-header cm-modal-header">
+        <div class="cm-modal-title-wrap">
+          <span class="cm-modal-icon"><i class="bi bi-geo-alt-fill"></i></span>
+          <h5 class="modal-title fw-semibold cm-modal-title" id="mapModalLabel">Pick Center Location</h5>
         </div>
+        <button type="button" class="btn-close cm-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content cm-modal-content">
-        <div class="modal-header cm-modal-header">
-          <div class="cm-modal-title-wrap">
-            <span class="cm-modal-icon"><i class="bi bi-geo-alt-fill"></i></span>
-            <h5 class="modal-title fw-semibold cm-modal-title" id="mapModalLabel">Pick Center Location</h5>
-          </div>
-          <button type="button" class="btn-close cm-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body cm-modal-body" style="padding:0;">
-          <div class="map-search-bar">
-            <div class="map-search-input-wrap">
-              <i class="bi bi-search map-search-icon"></i>
-              <input type="text" id="mapSearchInput" class="cm-input map-search-field" placeholder="Search city, area, school or address..." autocomplete="off">
-              <div class="map-search-spinner d-none" id="mapSearchSpinner">
-                <div class="map-spinner"></div>
-              </div>
+      <div class="modal-body cm-modal-body" style="padding:0;">
+        <div class="map-search-bar">
+          <div class="map-search-input-wrap">
+            <i class="bi bi-search map-search-icon"></i>
+            <input type="text" id="mapSearchInput" class="cm-input map-search-field" placeholder="Search city, area, school or address..." autocomplete="off" data-geoapify-key="{{ geoapify_api_key }}">
+            <div class="map-search-spinner d-none" id="mapSearchSpinner">
+              <div class="map-spinner"></div>
             </div>
-            <div id="mapSuggestions" class="map-suggestions d-none"></div>
           </div>
-          <div id="mapContainer" style="height:400px;width:100%;border-radius:0;"></div>
-          <div style="padding:12px 16px;background:var(--gray-50);border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-            <div>
-              <span style="font-size:13px;font-weight:500;">Latitude: </span><span id="mapLatDisplay" style="font-size:13px;color:var(--text-secondary);">--</span>
-              <span style="font-size:13px;font-weight:500;margin-left:16px;">Longitude: </span><span id="mapLngDisplay" style="font-size:13px;color:var(--text-secondary);">--</span>
-            </div>
-            <button type="button" class="cm-btn cm-btn-save" id="confirmLocationBtn" disabled>
-              <i class="bi bi-check-lg"></i> Confirm Location
-            </button>
+          <div id="mapSuggestions" class="map-suggestions d-none"></div>
+        </div>
+        <div id="mapContainer" style="height:400px;width:100%;border-radius:0;"></div>
+        <div style="padding:12px 16px;background:var(--gray-50);border-top:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <span style="font-size:13px;font-weight:500;">Latitude: </span><span id="mapLatDisplay" style="font-size:13px;color:var(--text-secondary);">--</span>
+            <span style="font-size:13px;font-weight:500;margin-left:16px;">Longitude: </span><span id="mapLngDisplay" style="font-size:13px;color:var(--text-secondary);">--</span>
           </div>
+          <button type="button" class="cm-btn cm-btn-save" id="confirmLocationBtn" disabled>
+            <i class="bi bi-check-lg"></i> Confirm Location
+          </button>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="position-fixed top-0 end-0 p-3" style="z-index:9999;">
-    <div id="centerToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius:12px;">
-      <div class="d-flex">
-        <div class="toast-body" id="centerToastMessage" style="font-size:0.875rem;font-weight:500;"></div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999;">
+  <div id="centerToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius:12px;">
+    <div class="d-flex">
+      <div class="toast-body" id="centerToastMessage" style="font-size:0.875rem;font-weight:500;"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
   </div>
+</div>
+{% endblock %}
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-  <script src="{% static 'js/admin_dashboard.js' %}"></script>
-  <script src="{% static 'js/center_management.js' %}"></script>
-</body>
-</html>
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{% static 'js/admin_dashboard.js' %}"></script>
+<script src="{% static 'js/center_management.js' %}"></script>
+{% endblock %}

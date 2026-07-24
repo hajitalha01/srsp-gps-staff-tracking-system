@@ -11,7 +11,13 @@ SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+GEOAPIFY_API_KEY = config('GEOAPIFY_API_KEY')
+
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.trycloudflare.com']
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.trycloudflare.com',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -96,3 +102,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/staff/home/'
+
+CENTER_RADIUS_METERS = 100

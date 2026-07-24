@@ -6,7 +6,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from staff.models import StaffProfile
-from admin_panel.models import EmergencyAlert, Attendance, Notification
+from admin_panel.models import EmergencyAlert, Attendance, Notification, Center, CenterLocationChangeRequest, AuditLog
 from django.utils import timezone
 from django.db.models import Count, Q, Sum
 from datetime import timedelta
@@ -31,9 +31,22 @@ def home(request):
     staff = get_staff_context(request.user)
     ctx = {'staff': staff}
     if staff and staff.assigned_center:
-        ctx['user_center'] = staff.assigned_center.center_name
+        center = staff.assigned_center
+        ctx['user_center'] = center.center_name
+        ctx['center_config_status'] = center.configuration_status
     else:
         ctx['user_center'] = 'Not assigned'
+        ctx['center_config_status'] = None
+
+    today = timezone.now().date()
+    try:
+        today_attendance = Attendance.objects.get(staff=request.user, date=today)
+        ctx['has_checked_in'] = today_attendance.check_in_time is not None
+        ctx['has_checked_out'] = today_attendance.check_out_time is not None
+    except Attendance.DoesNotExist:
+        ctx['has_checked_in'] = False
+        ctx['has_checked_out'] = False
+
     return render(request, 'staff/home.html', ctx)
 
 
@@ -42,9 +55,16 @@ def dashboard(request):
     staff = get_staff_context(request.user)
     ctx = {'staff': staff}
     if staff and staff.assigned_center:
-        ctx['user_center'] = staff.assigned_center.center_name
+        center = staff.assigned_center
+        ctx['user_center'] = center.center_name
+        ctx['center_config_status'] = center.configuration_status
+        ctx['center_latitude'] = center.latitude
+        ctx['center_longitude'] = center.longitude
     else:
         ctx['user_center'] = 'Not assigned'
+        ctx['center_config_status'] = None
+        ctx['center_latitude'] = None
+        ctx['center_longitude'] = None
 
     today = timezone.now().date()
     try:
@@ -68,6 +88,262 @@ def dashboard(request):
         ctx['today_working_hours'] = None
 
     return render(request, 'staff/dashboard.html', ctx)
+
+
+@login_required
+def center_settings(request):
+    staff = get_staff_context(request.user)
+    ctx = {'staff': staff}
+    if staff and staff.assigned_center:
+        center = staff.assigned_center
+        ctx['user_center'] = center.center_name
+        ctx['center'] = center
+        ctx['configuration_status'] = center.configuration_status
+        ctx['configured_by'] = center.configured_by.full_name if center.configured_by else None
+        ctx['configured_date'] = center.configured_date
+        ctx['latitude'] = center.latitude
+        ctx['longitude'] = center.longitude
+        ctx['gps_accuracy'] = center.gps_accuracy
+
+        # Check if teacher has an approved but unused permission
+        has_pending_request = CenterLocationChangeRequest.objects.filter(
+            teacher=request.user, center=center, status='Pending'
+        ).exists()
+        ctx['has_pending_request'] = has_pending_request
+
+        approved_request = CenterLocationChangeRequest.objects.filter(
+            teacher=request.user, center=center,
+            status='Approved', used_permission=False
+        ).first()
+        ctx['has_approval'] = approved_request is not None
+
+        ctx['location_change_requests'] = CenterLocationChangeRequest.objects.filter(
+            teacher=request.user, center=center
+        ).order_by('-requested_at')
+    else:
+        ctx['user_center'] = 'Not assigned'
+        ctx['center'] = None
+
+    return render(request, 'staff/center_settings.html', ctx)
+
+
+@login_required
+def settings_page(request):
+    staff = get_staff_context(request.user)
+    ctx = {'staff': staff}
+    if staff and staff.assigned_center:
+        center = staff.assigned_center
+        ctx['user_center'] = center.center_name
+        ctx['center'] = center
+        ctx['configuration_status'] = center.configuration_status
+        ctx['configured_by'] = center.configured_by.full_name if center.configured_by else None
+        ctx['configured_date'] = center.configured_date
+        ctx['latitude'] = center.latitude
+        ctx['longitude'] = center.longitude
+        ctx['gps_accuracy'] = center.gps_accuracy
+
+        has_pending_request = CenterLocationChangeRequest.objects.filter(
+            teacher=request.user, center=center, status='Pending'
+        ).exists()
+        ctx['has_pending_request'] = has_pending_request
+
+        approved_request = CenterLocationChangeRequest.objects.filter(
+            teacher=request.user, center=center,
+            status='Approved', used_permission=False
+        ).first()
+        ctx['has_approval'] = approved_request is not None
+
+        ctx['location_change_requests'] = CenterLocationChangeRequest.objects.filter(
+            teacher=request.user, center=center
+        ).order_by('-requested_date')
+    else:
+        ctx['user_center'] = 'Not assigned'
+        ctx['center'] = None
+
+    return render(request, 'staff/settings.html', ctx)
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0].strip()
+    else:
+        ip = request.META.get('REMOTE_ADDR', '')
+    return ip
+
+
+@login_required
+def configure_center(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+    user = request.user
+    if user.role not in ('Teacher', 'Field Staff'):
+        return JsonResponse({'success': False, 'error': 'Only teachers can configure center location.'})
+
+    try:
+        staff = StaffProfile.objects.select_related('assigned_center').get(user=user)
+    except StaffProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Staff profile not found.'})
+
+    center = staff.assigned_center
+    if not center:
+        return JsonResponse({'success': False, 'error': 'You are not assigned to any center.'})
+
+    # Check if already configured
+    if center.configuration_status == Center.ConfigStatus.CONFIGURED:
+        # Check if teacher has an approved location change request with unused permission
+        approved_request = CenterLocationChangeRequest.objects.filter(
+            teacher=user, center=center,
+            status='Approved', used_permission=False
+        ).first()
+        if not approved_request:
+            return JsonResponse({'success': False, 'error': 'Center is already configured. Location changes require Administrator Approval.'})
+        # Use the permission
+        approved_request.used_permission = True
+        approved_request.save()
+    elif center.configuration_status == Center.ConfigStatus.NOT_CONFIGURED:
+        pass
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid center configuration status.'})
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request body.'})
+
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+    gps_accuracy = data.get('gps_accuracy')
+    face_verified = data.get('face_verified', False)
+
+    if latitude is None or longitude is None:
+        return JsonResponse({'success': False, 'error': 'GPS coordinates not received.'})
+
+    if not face_verified:
+        AuditLog.objects.create(
+            action='Face Verification Failed',
+            user=user,
+            details=f'Face verification failed for center {center.center_name}.',
+            ip_address=get_client_ip(request),
+            browser_info=request.META.get('HTTP_USER_AGENT', ''),
+        )
+        return JsonResponse({'success': False, 'error': 'Face verification required.'})
+
+    if gps_accuracy is not None and gps_accuracy > 20:
+        AuditLog.objects.create(
+            action='GPS Accuracy Failed',
+            user=user,
+            details=f'GPS accuracy too low ({gps_accuracy}m) for center {center.center_name}.',
+            ip_address=get_client_ip(request),
+            browser_info=request.META.get('HTTP_USER_AGENT', ''),
+        )
+        return JsonResponse({'success': False, 'error': 'GPS accuracy is too low. Please move outdoors and try again.', 'gps_accuracy': gps_accuracy})
+
+    try:
+        latitude = float(latitude)
+        longitude = float(longitude)
+        if gps_accuracy is not None:
+            gps_accuracy = float(gps_accuracy)
+    except (ValueError, TypeError):
+        return JsonResponse({'success': False, 'error': 'Invalid coordinate data.'})
+
+    # Reject fake/empty coordinates
+    if latitude == 0 and longitude == 0:
+        return JsonResponse({'success': False, 'error': 'Invalid coordinates. Please try again.'})
+
+    # Save previous state for change request tracking
+    old_lat = center.latitude
+    old_lng = center.longitude
+
+    center.latitude = latitude
+    center.longitude = longitude
+    center.gps_accuracy = gps_accuracy
+    center.configuration_status = Center.ConfigStatus.CONFIGURED
+    center.configured_by = user
+    center.configured_date = timezone.now()
+    center.browser_info = request.META.get('HTTP_USER_AGENT', '')
+    center.ip_address = get_client_ip(request)
+    center.save()
+
+    AuditLog.objects.create(
+        action='Center Configured',
+        user=user,
+        details=f'Center {center.center_name} configured at {latitude}, {longitude} with accuracy {gps_accuracy}m.',
+        ip_address=get_client_ip(request),
+        browser_info=request.META.get('HTTP_USER_AGENT', ''),
+    )
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Center location configured successfully.',
+        'latitude': latitude,
+        'longitude': longitude,
+        'gps_accuracy': gps_accuracy,
+    })
+
+
+@login_required
+def request_location_change(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+    user = request.user
+    if user.role not in ('Teacher', 'Field Staff'):
+        return JsonResponse({'success': False, 'error': 'Only teachers can request location changes.'})
+
+    try:
+        staff = StaffProfile.objects.select_related('assigned_center').get(user=user)
+    except StaffProfile.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Staff profile not found.'})
+
+    center = staff.assigned_center
+    if not center:
+        return JsonResponse({'success': False, 'error': 'You are not assigned to any center.'})
+
+    if center.configuration_status != Center.ConfigStatus.CONFIGURED:
+        return JsonResponse({'success': False, 'error': 'Center has not been configured yet.'})
+
+    # Prevent duplicate pending requests
+    if CenterLocationChangeRequest.objects.filter(teacher=user, center=center, status='Pending').exists():
+        return JsonResponse({'success': False, 'error': 'You already have a pending location change request for this center.'})
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request body.'})
+
+    reason = data.get('reason', '').strip()
+    if not reason:
+        return JsonResponse({'success': False, 'error': 'Please provide a reason for the location change.'})
+
+    new_latitude = data.get('new_latitude')
+    new_longitude = data.get('new_longitude')
+
+    req = CenterLocationChangeRequest.objects.create(
+        teacher=user,
+        center=center,
+        reason=reason,
+        status='Pending',
+        old_latitude=center.latitude,
+        old_longitude=center.longitude,
+        new_latitude=new_latitude,
+        new_longitude=new_longitude,
+    )
+
+    AuditLog.objects.create(
+        action='Location Change Requested',
+        user=user,
+        details=f'Location change requested for {center.center_name}: {reason}',
+        ip_address=get_client_ip(request),
+        browser_info=request.META.get('HTTP_USER_AGENT', ''),
+    )
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Request submitted successfully. Awaiting admin approval.',
+        'request_id': req.id,
+    })
 
 
 @login_required
