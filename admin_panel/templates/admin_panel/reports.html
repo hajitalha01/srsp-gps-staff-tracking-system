@@ -12,18 +12,6 @@
 
   <div style="flex:1;background:var(--surface-1);padding:20px 22px;min-width:0">
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div>
-        <h3 style="font-size:18px;margin:0">Reports &amp; Analytics</h3>
-        <p style="font-size:13px;color:var(--text-secondary);margin:2px 0 0">Comprehensive attendance and performance report</p>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <a href="{% url 'admin_notifications' %}" style="text-decoration:none;color:inherit"><i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary)"></i></a>
-        <a href="{% url 'admin_alerts' %}" style="text-decoration:none;color:inherit"><i class="ti ti-alert-triangle" style="font-size:18px;color:var(--text-danger)"></i></a>
-        <div style="width:30px;height:30px;border-radius:50%;background:var(--bg-accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--text-accent)">{{ user_initials|default:"AD" }}</div>
-      </div>
-    </div>
-
     <div class="rp-page-header">
       <div>
         <h3 class="rp-page-title">Reports &amp; Analytics</h3>
