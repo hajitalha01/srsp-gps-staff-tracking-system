@@ -378,9 +378,9 @@ small, .text-small { font-size: 0.8125rem; }
   color: #fff;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   height: 100vh;
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
   overflow: hidden;
   transition: width 0.3s ease;
@@ -389,6 +389,9 @@ small, .text-small { font-size: 0.8125rem; }
 body.sidebar-hover .sidebar,
 .sidebar:hover {
   width: 260px;
+}
+.sidebar + div {
+  margin-left: 70px;
 }
 
 .sidebar-brand {
@@ -780,6 +783,7 @@ body.sidebar-hover .sidebar-link span,
   }
   .sidebar.show { transform: translateX(0); }
   .sidebar-toggle { display: block; }
+  .sidebar + div { margin-left: 0; }
   .sidebar-backdrop {
     position: fixed;
     inset: 0;
